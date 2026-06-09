@@ -26,16 +26,6 @@ router.post('/calibrate/:id/offset', (req, res) => {
     res.json({ ok: true, sent: `cal_offset:${index}` });
 });
 
-// POST /api/calibrate/:id/scale  — kalibrasi skala sensor ke-N
-// Body: { "index": 0, "ampere": 2.5 }
-router.post('/calibrate/:id/scale', (req, res) => {
-    const { id } = req.params;
-    const { index, ampere } = req.body;
-    if (index === undefined || !ampere) return res.status(400).json({ error: 'index and ampere required' });
-    mqttSvc.sendCommand(id, `cal_scale:${index}:${ampere}`);
-    res.json({ ok: true, sent: `cal_scale:${index}:${ampere}` });
-});
-
 // POST /api/calibrate/:id/save  — simpan semua kalibrasi ke NVS
 router.post('/calibrate/:id/save', (req, res) => {
     const { id } = req.params;
