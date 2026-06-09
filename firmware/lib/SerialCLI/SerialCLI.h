@@ -16,7 +16,7 @@ private:
     uint8_t      _active;
     void handleChar(char c);
     void doOffset();
-    void doScale();
+
     void printStatus();
     void printHelp();
     void selectSensor();

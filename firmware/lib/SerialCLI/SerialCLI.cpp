@@ -9,7 +9,6 @@ void SerialCLI::loop()   { if (Serial.available()) handleChar(Serial.read()); }
 void SerialCLI::handleChar(char c) {
     switch (c) {
         case 'c': doOffset();     break;
-        case 'C': doScale();      break;
         case 'z': printStatus();  break;
         case 'p': selectSensor(); break;
         case 's': _cal.save();    break;
@@ -29,40 +28,21 @@ void SerialCLI::doOffset() {
         _cal.getData(_active).vMid);
 }
 
-void SerialCLI::doScale() {
-    Serial.printf("\n>> Scale [%d] %s — hidupkan beban\n",
-        _active, CURRENT_NAMES[_active]);
-    Serial.println("   Masukkan arus referensi (A) + Enter:");
-    String inp = ""; unsigned long t = millis();
-    while (millis() - t < 15000) {
-        if (Serial.available()) {
-            char c = Serial.read();
-            if (c == '\n' || c == '\r') { if (inp.length()) break; }
-            else { inp += c; Serial.print(c); }
-        }
-    }
-    Serial.println();
-    float ref = inp.toFloat();
-    if (ref > 0) {
-        _cal.autoScale(_sensors[_active], ref);
-        Serial.printf("   mVpA = %.3f  — ketik 's' untuk simpan\n",
-            _cal.getData(_active).mVpA);
-    } else Serial.println("   Input tidak valid.");
-}
+
 
 void SerialCLI::printStatus() {
     Serial.println("\n>> KALIBRASI:");
     for (int i = 0; i < _n; i++) {
         const auto& d = _cal.getData(i);
-        Serial.printf("   [%d]%s %-14s vMid=%-8.2f mVpA=%-7.2f [%s][%s]\n",
+        Serial.printf("   [%d]%s %-14s vMid=%-8.2f mVpA=%-7.2f [%s]\n",
             i, i==_active?"◄":" ", CURRENT_NAMES[i], d.vMid, d.mVpA,
-            d.offsetDone?"OFF✓":"OFF✗", d.scaleDone?"SCL✓":"SCL✗");
+            d.offsetDone?"OFF✓":"OFF✗");
     }
 }
 
 void SerialCLI::printHelp() {
     Serial.println("-------------------------------------------");
-    Serial.println("c=offset  C=scale  z=status  p=sensor");
+    Serial.println("c=offset  z=status  p=sensor");
     Serial.println("s=simpan  l=load   r=reset   ?=help");
     Serial.println("-------------------------------------------");
 }

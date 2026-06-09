@@ -8,7 +8,6 @@ class Calibration {
 public:
     Calibration();
     bool autoOffset(ACS712& sensor);
-    bool autoScale(ACS712& sensor, float ampereRef);
     const CalibrationData& getData(uint8_t index) const;
     void save();
     void load();

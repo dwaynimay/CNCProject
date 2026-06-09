@@ -46,7 +46,7 @@ void MqttClient::publish(const MqttPayload& p) {
             i ? "," : "", TEMP_NAMES[i], p.temp[i].celsius,
             p.temp[i].alarm ? "true" : "false");
     }
-    pos += snprintf(buf + pos, sizeof(buf) - pos, "]}");
+    pos += snprintf(buf + pos, sizeof(buf) - pos, "],\"relayOn\":%s}", p.relayOn ? "true" : "false");
 
     char topic[64];
     snprintf(topic, sizeof(topic), "cnc/%s/telemetry", _clientId);

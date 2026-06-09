@@ -15,7 +15,6 @@ struct CalibrationData {
     double vMid;
     double mVpA;
     bool   offsetDone;
-    bool   scaleDone;
 };
 
 struct TempReading {
@@ -28,4 +27,5 @@ struct MqttPayload {
     CurrentReading current[5];
     TempReading    temp[2];
     uint32_t       timestamp;
+    bool           relayOn;
 };

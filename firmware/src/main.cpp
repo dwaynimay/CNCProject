@@ -55,22 +55,6 @@ void onCommand(const char* topic, const char* payload) {
         return;
     }
 
-    // cal_scale:<index>:<ampere_ref>  — kalibrasi skala sensor ke-N dengan referensi arus
-    if (strncmp(payload, "cal_scale:", 10) == 0) {
-        char buf[32];
-        strncpy(buf, payload + 10, sizeof(buf) - 1);
-        char* sep = strchr(buf, ':');
-        if (sep) {
-            *sep = '\0';
-            int   idx = atoi(buf);
-            float ref = atof(sep + 1);
-            if (idx >= 0 && idx < 5 && ref > 0) {
-                cal.autoScale(sensors[idx], ref);
-                Serial.printf(">> cal_scale[%d] done mVpA=%.3f\n", idx, cal.getData(idx).mVpA);
-            }
-        }
-        return;
-    }
 }
 
 void setup() {
@@ -98,6 +82,8 @@ void loop() {
         payload.temp[i] = tempSensors.read(i);
 
     checkAlarms(payload);
+    payload.relayOn = relay.isOn();
+
     mqtt.publish(payload);
     cli.printLive(payload.current, 5);
 }
