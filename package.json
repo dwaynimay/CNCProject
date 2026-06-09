@@ -1,0 +1,13 @@
+{
+  "name": "cncproject",
+  "version": "1.0.0",
+  "private": true,
+  "scripts": {
+    "start": "concurrently --names \"BACKEND,DASHBOARD\" --prefix-colors \"cyan,magenta\" \"npm run start:backend\" \"npm run start:dashboard\"",
+    "start:backend": "cd server/backend && node index.js",
+    "start:dashboard": "cd server/dashboard && npm run dev"
+  },
+  "devDependencies": {
+    "concurrently": "^8.2.2"
+  }
+}
