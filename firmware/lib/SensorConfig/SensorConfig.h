@@ -1,0 +1,29 @@
+#pragma once
+#include <Arduino.h>
+#include "types.h"
+
+// ── Edit file ini untuk sesuaikan dengan hardware ──────────
+
+constexpr int CURRENT_PINS[5]          = {34, 35, 32, 33, 36};
+constexpr const char* CURRENT_NAMES[5] = {
+    "Stepper_X", "Stepper_Y1", "Stepper_Y2", "Stepper_Z", "Spindle"
+};
+constexpr ACS712Type CURRENT_TYPES[5]  = {
+    ACS712_20A, ACS712_20A, ACS712_20A, ACS712_20A, ACS712_30A
+};
+constexpr float CURRENT_ALARM[5]       = {3.0f, 3.0f, 3.0f, 2.0f, 8.0f};
+
+constexpr int   ONEWIRE_PIN            = 4;
+constexpr const char* TEMP_NAMES[2]    = {"Spindle", "Stepper_Z"};
+constexpr float TEMP_ALARM[2]          = {60.0f, 55.0f};
+
+constexpr int  RELAY_PIN               = 5;
+constexpr bool RELAY_ACTIVE_LOW        = true;
+
+constexpr double VD_RATIO              = 20.0 / 30.0;
+constexpr double ADC_MAX               = 4095.0;
+constexpr double ADC_VREF_MV           = 3300.0;
+constexpr double VCC_ACS_MV            = 5000.0;
+
+constexpr int SAMPLE_CALIBRATION       = 2000;
+constexpr int SAMPLE_RUNTIME           = 300;
