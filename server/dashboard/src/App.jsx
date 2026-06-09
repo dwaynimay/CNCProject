@@ -1,319 +1,388 @@
 import { useState, useEffect, useRef } from 'react';
+import {
+  LineChart, Line, XAxis, YAxis, Tooltip, ResponsiveContainer,
+} from 'recharts';
 
-const DEVICE_ID = 'cnc-esp32';
-const API       = import.meta.env.VITE_API_URL || 'http://localhost:3001/api';
-const WS_URL    = import.meta.env.VITE_WS_URL  || 'ws://localhost:3002';
+const DEVICE_ID      = 'cnc-esp32';
+const API            = import.meta.env.VITE_API_URL || 'http://localhost:3001/api';
+const WS_URL         = import.meta.env.VITE_WS_URL  || 'ws://localhost:3002';
 
-const CURRENT_NAMES  = ['Stepper_X', 'Stepper_Y1', 'Stepper_Y2', 'Stepper_Z', 'Spindle'];
-const CURRENT_LIMITS = [3.0, 3.0, 3.0, 2.0, 8.0];   // alarm threshold per sensor
-const TEMP_NAMES     = ['Spindle', 'Stepper_Z'];
+const CURRENT_NAMES  = ['Stepper X', 'Stepper Y1', 'Stepper Y2', 'Stepper Z', 'Spindle'];
+const CURRENT_LIMITS = [3.0, 3.0, 3.0, 2.0, 8.0];
+const TEMP_NAMES     = ['Spindle', 'Stepper Z'];
 const TEMP_LIMITS    = [60, 55];
 
-// ── helpers ──────────────────────────────────────────────────────
+// Non-blue, non-purple — warm palette for chart lines
+const CHART_COLORS = ['#f0b429', '#22c55e', '#a3e635', '#f97316', '#cbd5e1'];
+
+const HISTORY_LEN = 90;
+
+// ── helpers ───────────────────────────────────────────────────────────
 async function post(url, body = {}) {
   try {
-    const r = await fetch(url, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) });
+    const r = await fetch(url, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(body),
+    });
     return r.json();
-  } catch (e) { return { error: e.message }; }
+  } catch (e) {
+    return { error: e.message };
+  }
 }
 
 function fmt(v, d = 4) { return v != null ? Number(v).toFixed(d) : '—'; }
-function ts() { return new Date().toLocaleTimeString('id-ID', { hour12: false }); }
+function nowTs() {
+  return new Date().toLocaleTimeString('id-ID', { hour12: false });
+}
 
-// ── sub-components ───────────────────────────────────────────────
+// ── CurrentCard ───────────────────────────────────────────────────────
 function CurrentCard({ sensor, name, limit, onCal }) {
   const a     = sensor?.a;
   const alarm = sensor?.alarm;
   const nc    = a == null;
   const pct   = nc ? 0 : Math.min((Math.abs(a) / limit) * 100, 100);
-  const cls   = nc ? '' : alarm ? 'alarm' : 'ok';
-  const barColor = alarm ? 'var(--red)' : pct > 70 ? 'var(--amber)' : 'var(--green)';
+  const cls   = nc ? '' : alarm ? 'alarm' : pct > 75 ? 'warn' : 'ok';
+  const valColor = alarm ? 'var(--red)' : pct > 75 ? 'var(--orange)' : 'var(--text)';
+  const barColor = alarm ? 'var(--red)' : pct > 75 ? 'var(--orange)' : 'var(--green)';
 
   return (
     <div className={`card ${cls}`}>
       <div className="card-label">{name}</div>
-      <div className="card-value">
+      <div className="card-value" style={{ color: valColor }}>
         {nc ? '—' : fmt(a, 4)}
         <span className="card-unit">A</span>
       </div>
       <div className="bar-track">
         <div className="bar-fill" style={{ width: `${pct}%`, background: barColor }} />
       </div>
-      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginTop: 8 }}>
-        <span className={`card-status ${nc ? 'status-nc' : alarm ? 'status-alarm' : 'status-ok'}`}>
-          {nc ? '● MENUNGGU' : alarm ? '⚠ ALARM' : '● NORMAL'}
+      <div className="card-status">
+        <span className={nc ? 'status-nc' : alarm ? 'status-alarm' : pct > 75 ? 'status-warn' : 'status-ok'}>
+          {nc ? '● MENUNGGU' : alarm ? '⚠ ALARM' : pct > 75 ? '▲ TINGGI' : '● NORMAL'}
         </span>
-        <button className="btn btn-ghost btn-sm" onClick={onCal} title="Buka panel kalibrasi">⚙</button>
+        <button className="btn btn-ghost btn-sm" onClick={onCal} title="Set Offset Nol & Simpan">⚙ Set Nol</button>
       </div>
     </div>
   );
 }
 
+// ── TempCard ──────────────────────────────────────────────────────────
 function TempCard({ sensor, name, limit }) {
   const c     = sensor?.c;
   const alarm = sensor?.alarm;
   const nc    = c == null;
   const pct   = nc ? 0 : Math.min((c / limit) * 100, 100);
   const cls   = nc ? '' : alarm ? 'alarm' : c > limit * 0.8 ? 'warn' : 'ok';
+  const valColor = nc
+    ? 'var(--muted)'
+    : alarm ? 'var(--red)' : c > limit * 0.8 ? 'var(--orange)' : 'var(--text)';
 
   return (
     <div className={`card temp-card ${cls}`}>
-      <span className="temp-icon">🌡️</span>
       <div className="card-label">{name}</div>
-      <div className="card-value" style={{ color: alarm ? 'var(--red)' : c > limit * 0.8 ? 'var(--amber)' : 'var(--cyan)' }}>
+      <div className="card-value" style={{ color: valColor }}>
         {nc ? '—' : fmt(c, 1)}
         <span className="card-unit">°C</span>
       </div>
       <div className="bar-track">
-        <div className="bar-fill" style={{ width: `${pct}%`, background: alarm ? 'var(--red)' : pct > 80 ? 'var(--amber)' : 'var(--cyan)' }} />
+        <div className="bar-fill" style={{
+          width: `${pct}%`,
+          background: alarm ? 'var(--red)' : pct > 80 ? 'var(--orange)' : 'var(--green)',
+        }} />
       </div>
-      <div className="card-status" style={{ marginTop: 8 }}>
-        <span className={nc ? 'status-nc' : alarm ? 'status-alarm' : 'status-ok'}>
-          {nc ? '● MENUNGGU' : alarm ? '⚠ OVERHEAT' : '● NORMAL'}
+      <div className="card-status">
+        <span className={nc ? 'status-nc' : alarm ? 'status-alarm' : c > limit * 0.8 ? 'status-warn' : 'status-ok'}>
+          {nc ? '● MENUNGGU' : alarm ? '⚠ OVERHEAT' : c > limit * 0.8 ? '▲ PANAS' : '● NORMAL'}
         </span>
-        <span style={{ marginLeft: 8, fontSize: 10, color: 'var(--muted)' }}>maks {limit}°C</span>
+        <span style={{ fontSize: 10, color: 'var(--muted)' }}>maks {limit}°C</span>
       </div>
     </div>
   );
 }
 
-function RelayCard({ relayOn, onOn, onOff }) {
+// ── RelayCard ─────────────────────────────────────────────────────────
+function RelayCard({ relayOn, disabled, onOn, onOff }) {
   return (
-    <div className="card relay-card">
-      <div className="card-label">Kontrol Relay</div>
-      <div>
-        <div className="relay-status-label">Status Mesin</div>
-        <div className="relay-status-value" style={{ color: relayOn ? 'var(--green)' : 'var(--red)' }}>
-          {relayOn ? '🟢 MENYALA (ON)' : '🔴 TRIP / MATI (OFF)'}
-        </div>
-      </div>
-      <div className="relay-btns">
-        <button className="btn btn-green" onClick={onOn}>▶ Nyalakan Mesin</button>
-        <button className="btn btn-red"   onClick={onOff}>⏹ Matikan / Trip</button>
+    <div className="card relay-card" style={{ alignItems: 'center', textAlign: 'center' }}>
+      <div className="card-label">Kontrol Mesin</div>
+      <button 
+        className={`btn-power ${relayOn ? 'on' : 'off'}`}
+        disabled={disabled}
+        onClick={relayOn ? onOff : onOn}
+        title={disabled ? 'Menunggu koneksi...' : (relayOn ? 'Matikan / Trip' : 'Nyalakan Mesin')}
+      >
+        <svg viewBox="0 0 24 24" width="28" height="28" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+          <path d="M18.36 6.64a9 9 0 1 1-12.73 0"></path>
+          <line x1="12" y1="2" x2="12" y2="12"></line>
+        </svg>
+      </button>
+      <div className="relay-state-text" style={{ color: disabled ? 'var(--muted)' : (relayOn ? 'var(--green)' : 'var(--red)') }}>
+        {disabled ? 'TIDAK TERSEDIA' : (relayOn ? 'MENYALA' : 'MATI / TRIP')}
       </div>
     </div>
   );
 }
 
-function CalRow({ idx, name, scaleVal, onScaleChange, onOffset, onScale }) {
-  return (
-    <tr>
-      <td><strong>{idx}</strong></td>
-      <td>{name}</td>
-      <td>
-        <button className="btn btn-ghost btn-sm" onClick={() => onOffset(idx)}>
-          Ambil Offset
-        </button>
-        <span style={{ marginLeft: 6, fontSize: 10, color: 'var(--muted)' }}>(mesin mati)</span>
-      </td>
-      <td style={{ display: 'flex', gap: 6, alignItems: 'center' }}>
-        <input
-          className="cal-input"
-          type="number" step="0.01" placeholder="Ref (A)"
-          value={scaleVal}
-          onChange={e => onScaleChange(idx, e.target.value)}
-        />
-        <button className="btn btn-amber btn-sm" onClick={() => onScale(idx)}>
-          Terapkan
-        </button>
-      </td>
-    </tr>
-  );
-}
-
-// ── main ─────────────────────────────────────────────────────────
+// ── App ───────────────────────────────────────────────────────────────
 export default function App() {
-  const [connected, setConnected] = useState(false);
-  const [data, setData]           = useState(null);
-  const [relayOn, setRelayOn]     = useState(true);
-  const [scaleInputs, setScaleInputs] = useState(Array(5).fill(''));
-  const [log, setLog]             = useState([]);
-  const [calOpen, setCalOpen]     = useState(false);
+  const [connected,    setConnected]    = useState(false);
+  const [data,         setData]         = useState(null);
+  const [history,      setHistory]      = useState([]);
+  const [relayOn,      setRelayOn]      = useState(true);
+  const [log,          setLog]          = useState([]);
+  const [logOpen,      setLogOpen]      = useState(false);
+  const [lastTs,       setLastTs]       = useState(null);
+  const [theme,        setTheme]        = useState(() => localStorage.getItem('theme') || 'dark');
   const logRef = useRef(null);
   const wsRef  = useRef(null);
 
-  // WebSocket
+  useEffect(() => {
+    document.documentElement.setAttribute('data-theme', theme);
+    localStorage.setItem('theme', theme);
+  }, [theme]);
+
+  // WebSocket with auto-reconnect
   useEffect(() => {
     function connect() {
       const ws = new WebSocket(WS_URL);
       wsRef.current = ws;
-      ws.onopen  = () => { setConnected(true);  addLog('WebSocket terhubung ke backend.', 'ok'); };
-      ws.onclose = () => { setConnected(false); addLog('WebSocket terputus, menyambung ulang...', 'error'); setTimeout(connect, 3000); };
+
+      ws.onopen = () => {
+        setConnected(true);
+        addLog('WebSocket terhubung ke backend.', 'ok');
+      };
+
+      ws.onclose = () => {
+        setConnected(false);
+        addLog('WebSocket terputus, menyambung ulang...', 'error');
+        setTimeout(connect, 3000);
+      };
+
       ws.onerror = () => ws.close();
+
       ws.onmessage = (e) => {
         try {
           const frame = JSON.parse(e.data);
-          if (frame.type === 'telemetry' && frame.deviceId === DEVICE_ID) setData(frame.data);
+          if (frame.type !== 'telemetry' || frame.deviceId !== DEVICE_ID) return;
+
+          setData(frame.data);
+          setLastTs(nowTs());
+          if (frame.data.relayOn !== undefined) {
+            setRelayOn(frame.data.relayOn);
+          }
+
+          setHistory(prev => {
+            const entry = { tick: prev.length };
+            CURRENT_NAMES.forEach((_, i) => {
+              entry[`c${i}`] = frame.data.current?.[i]?.a ?? null;
+            });
+            return [...prev.slice(-(HISTORY_LEN - 1)), entry];
+          });
         } catch (_) {}
       };
     }
+
     connect();
     return () => wsRef.current?.close();
   }, []);
 
-  // Auto-scroll log
-  useEffect(() => { if (logRef.current) logRef.current.scrollTop = 0; }, [log]);
+  useEffect(() => {
+    if (logRef.current) logRef.current.scrollTop = 0;
+  }, [log]);
 
   function addLog(msg, type = '') {
-    setLog(prev => [{ msg, type, ts: ts() }, ...prev].slice(0, 50));
+    setLog(prev => [{ msg, type, ts: nowTs() }, ...prev].slice(0, 80));
   }
 
   async function sendCmd(cmd, label) {
-    addLog(`→ Kirim: ${label || cmd}`, 'send');
+    addLog(`Kirim: ${label || cmd}`, 'send');
     const r = await post(`${API}/command/${DEVICE_ID}`, { cmd });
-    addLog(r.ok ? `✓ Berhasil: ${r.sent}` : `✗ Error: ${r.error}`, r.ok ? 'ok' : 'error');
+    addLog(r.ok ? `Berhasil: ${r.sent}` : `Error: ${r.error}`, r.ok ? 'ok' : 'error');
   }
 
   async function doOffset(idx) {
-    addLog(`→ Kalibrasi Offset [${idx}] ${CURRENT_NAMES[idx]}...`, 'send');
+    addLog(`Kalibrasi offset [${idx}] ${CURRENT_NAMES[idx]}...`, 'send');
     const r = await post(`${API}/calibrate/${DEVICE_ID}/offset`, { index: idx });
-    addLog(r.ok ? `✓ Offset [${idx}] dikirim` : `✗ ${r.error}`, r.ok ? 'ok' : 'error');
+    addLog(r.ok ? `Offset [${idx}] dikirim` : `Error: ${r.error}`, r.ok ? 'ok' : 'error');
   }
 
-  async function doScale(idx) {
-    const a = parseFloat(scaleInputs[idx]);
-    if (!a || a <= 0) { addLog(`⚠ Masukkan arus referensi untuk [${idx}] ${CURRENT_NAMES[idx]}`, 'error'); return; }
-    addLog(`→ Kalibrasi Skala [${idx}] ref=${a}A...`, 'send');
-    const r = await post(`${API}/calibrate/${DEVICE_ID}/scale`, { index: idx, ampere: a });
-    addLog(r.ok ? `✓ Skala [${idx}] dikirim (ref ${a}A)` : `✗ ${r.error}`, r.ok ? 'ok' : 'error');
-  }
-
-  async function doSave()  {
-    addLog('→ Menyimpan semua kalibrasi ke NVS...', 'send');
+  async function doSave() {
+    addLog('Menyimpan kalibrasi ke NVS...', 'send');
     const r = await post(`${API}/calibrate/${DEVICE_ID}/save`);
-    addLog(r.ok ? '✓ Kalibrasi tersimpan ke NVS (Flash ESP32)' : `✗ ${r.error}`, r.ok ? 'ok' : 'error');
+    addLog(r.ok ? 'Kalibrasi tersimpan ke NVS (Flash ESP32)' : `Error: ${r.error}`, r.ok ? 'ok' : 'error');
   }
 
   async function doReset() {
-    addLog('→ Reset kalibrasi ke nilai default...', 'send');
+    addLog('Reset kalibrasi ke default...', 'send');
     const r = await post(`${API}/calibrate/${DEVICE_ID}/reset`);
-    addLog(r.ok ? '✓ Kalibrasi di-reset' : `✗ ${r.error}`, r.ok ? 'ok' : 'error');
-  }
-
-  function setScaleInput(idx, val) {
-    setScaleInputs(prev => { const n = [...prev]; n[idx] = val; return n; });
+    addLog(r.ok ? 'Kalibrasi di-reset' : `Error: ${r.error}`, r.ok ? 'ok' : 'error');
   }
 
   const current = data?.current ?? [];
   const temp    = data?.temp    ?? [];
-  // data.ts = millis() dari ESP32 (uptime ms), bukan unix timestamp
-  // Gunakan waktu lokal saat data diterima
-  const lastTs  = data ? ts() : null;
 
   return (
     <>
       {/* ── HEADER ── */}
       <header className="header">
-        <div className="header-logo">
-          <span>⚙ CNC IoT SCADA</span>
-          <small>Monitoring &amp; Control System</small>
+        <div className="header-brand">
+          {/* <div className="header-brand-icon">⚙</div> */}
+          <div>
+            {/* <span className="header-brand-name">CNC IoT SCADA</span>
+            <small className="header-brand-sub">Monitoring &amp; Control</small> */}
+          </div>
         </div>
-        <div className="header-meta">
+        <div className="header-right">
+          <label className="theme-switch" title="Toggle Light/Dark Mode">
+            <input 
+              type="checkbox" 
+              checked={theme === 'light'} 
+              onChange={() => setTheme(t => t === 'dark' ? 'light' : 'dark')} 
+            />
+            <span className="slider round"></span>
+          </label>
           <span className="device-id">Node: <strong>{DEVICE_ID}</strong></span>
           <div className={`conn-badge ${connected ? 'online' : 'offline'}`}>
             <div className="conn-dot" />
             {connected ? 'Terhubung' : 'Terputus'}
           </div>
-          {lastTs && <span className="header-ts">Update: {lastTs}</span>}
+          {/* {lastTs && <span className="header-ts">{lastTs}</span>} */}
         </div>
       </header>
 
       <main className="main">
 
-        {/* ── 1. ARUS ── */}
+        {/* ── SENSOR ARUS ── */}
         <section>
-          <div className="section-title">▸ Sensor Arus (Ampere)</div>
+          <p className="section-label">Sensor Arus</p>
           {!data ? (
             <div className="no-data">
-              <div className="no-data-icon">📡</div>
-              <div>Menunggu data dari ESP32...</div>
-              <div style={{ fontSize: 11, marginTop: 6, color: 'var(--muted)' }}>Pastikan ESP32 dan backend sudah berjalan</div>
+              Menunggu data...
             </div>
           ) : (
-            <div className="cards-5">
+            <div className="cards-auto">
               {CURRENT_NAMES.map((name, i) => (
                 <CurrentCard
-                  key={i} idx={i} name={name}
-                  sensor={current[i]} limit={CURRENT_LIMITS[i]}
-                  onCal={() => setCalOpen(true)}
+                  key={i}
+                  name={name}
+                  sensor={current[i]}
+                  limit={CURRENT_LIMITS[i]}
+                  onCal={async () => {
+                    await doOffset(i);
+                    setTimeout(doSave, 500);
+                  }}
                 />
               ))}
             </div>
           )}
         </section>
 
-        {/* ── 2. SUHU + RELAY ── */}
-        <section>
-          <div className="section-title">▸ Sensor Suhu &amp; Kontrol Relay</div>
-          <div className="row-3">
+        {/* ── TREN ARUS + SUHU + RELAY ── */}
+        <section className="pane-chart-side">
+
+          {/* Trend chart */}
+          <div className="chart-card">
+            <div className="chart-header">
+              <span className="chart-title">Tren Arus</span>
+              <div className="chart-legend">
+                {CURRENT_NAMES.map((name, i) => (
+                  <div key={i} className="legend-item">
+                    <div className="legend-dot" style={{ background: CHART_COLORS[i] }} />
+                    {name}
+                  </div>
+                ))}
+              </div>
+            </div>
+            {history.length < 2 ? (
+              <div className="chart-empty">Menunggu data...</div>
+            ) : (
+              <ResponsiveContainer width="100%" height={180}>
+                <LineChart data={history} margin={{ top: 4, right: 4, bottom: 0, left: -16 }}>
+                  <XAxis dataKey="tick" hide />
+                  <YAxis
+                    domain={[0, 'auto']}
+                    tick={{ fontSize: 10, fill: '#7a7060' }}
+                    tickLine={false}
+                    axisLine={false}
+                  />
+                  <Tooltip
+                    contentStyle={{
+                      background: '#1a1510',
+                      border: '1px solid #2d2418',
+                      borderRadius: '6px',
+                      fontSize: 11,
+                      color: '#ede8df',
+                    }}
+                    cursor={{ stroke: '#2d2418', strokeWidth: 1 }}
+                    labelFormatter={() => ''}
+                    formatter={(v, name) => [v != null ? `${Number(v).toFixed(3)} A` : '—', name]}
+                  />
+                  {CURRENT_NAMES.map((name, i) => (
+                    <Line
+                      key={i}
+                      type="monotone"
+                      dataKey={`c${i}`}
+                      name={name}
+                      stroke={CHART_COLORS[i]}
+                      strokeWidth={1.5}
+                      dot={false}
+                      connectNulls={false}
+                      isAnimationActive={false}
+                    />
+                  ))}
+                </LineChart>
+              </ResponsiveContainer>
+            )}
+          </div>
+
+          {/* Right: temp sensors + relay */}
+          <div className="side-stack">
             {TEMP_NAMES.map((name, i) => (
               <TempCard key={i} sensor={temp[i]} name={name} limit={TEMP_LIMITS[i]} />
             ))}
             <RelayCard
               relayOn={relayOn}
+              disabled={!connected || !data}
               onOn={() => { sendCmd('relay_on', 'Relay ON'); setRelayOn(true); }}
               onOff={() => { sendCmd('relay_off', 'Relay OFF'); setRelayOn(false); }}
             />
           </div>
         </section>
 
-        {/* ── 3. KALIBRASI ── */}
-        <section>
-          <div className="section-header" onClick={() => setCalOpen(v => !v)}>
-            <div className="section-title" style={{ marginBottom: 0 }}>▸ Panel Kalibrasi Sensor Arus</div>
-            <span className={`collapse-icon ${calOpen ? 'open' : ''}`}>▼</span>
-          </div>
-          {calOpen && (
-            <div className="card" style={{ marginTop: 12 }}>
-              <table className="cal-table">
-                <thead>
-                  <tr>
-                    <th>#</th><th>Nama Sensor</th>
-                    <th>Offset (Titik Nol)</th>
-                    <th>Skala (dengan Beban)</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {CURRENT_NAMES.map((name, i) => (
-                    <CalRow
-                      key={i} idx={i} name={name}
-                      scaleVal={scaleInputs[i]}
-                      onScaleChange={setScaleInput}
-                      onOffset={doOffset}
-                      onScale={doScale}
-                    />
-                  ))}
-                </tbody>
-              </table>
-              <div className="cal-actions">
-                <button className="btn btn-cyan" onClick={doSave}>
-                  💾 Simpan Semua ke NVS (Flash)
-                </button>
-                <button className="btn btn-ghost" onClick={doReset}>
-                  ♻ Reset ke Default
-                </button>
-              </div>
-            </div>
-          )}
-        </section>
 
-        {/* ── 4. LOG ── */}
+        {/* ── LOG AKTIVITAS ── */}
         <section>
-          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 10 }}>
-            <div className="section-title" style={{ marginBottom: 0 }}>▸ Log Aktivitas</div>
-            <button className="btn btn-ghost btn-sm" onClick={() => setLog([])}>Bersihkan</button>
-          </div>
-          <div className="log-box" ref={logRef}>
-            {log.length === 0
-              ? <div className="log-empty">(belum ada aktivitas)</div>
-              : log.map((l, i) => (
-                  <div className="log-line" key={i}>
-                    <span className="log-ts">{l.ts}</span>
-                    <span className={`log-msg ${l.type}`}>{l.msg}</span>
+          <button
+            className={`cal-toggle ${logOpen ? 'open' : ''}`}
+            onClick={() => setLogOpen(v => !v)}
+          >
+            <span className="cal-toggle-label">Log Aktivitas</span>
+            <span className={`cal-chevron ${logOpen ? 'open' : ''}`}>▼</span>
+          </button>
+          {logOpen && (
+            <div className="log-card" style={{ borderTop: 'none', borderRadius: '0 0 var(--radius) var(--radius)' }}>
+            <div className="log-body" ref={logRef} style={{ paddingTop: '8px' }}>
+              {log.length === 0 ? (
+                <div className="log-empty">Belum ada aktivitas</div>
+              ) : (
+                log.map((entry, i) => (
+                  <div key={i} className="log-entry">
+                    <span className="log-icon" style={{
+                      color: entry.type === 'send'  ? 'var(--amber)'
+                           : entry.type === 'ok'    ? 'var(--green)'
+                           : entry.type === 'error' ? 'var(--red)'
+                           : 'var(--muted)',
+                    }}>
+                      {entry.type === 'send' ? '→' : entry.type === 'ok' ? '✓' : entry.type === 'error' ? '✗' : '·'}
+                    </span>
+                    <span className="log-ts">{entry.ts}</span>
+                    <span className={`log-msg ${entry.type}`}>{entry.msg}</span>
                   </div>
                 ))
-            }
+              )}
+            </div>
           </div>
+          )}
         </section>
 
       </main>
