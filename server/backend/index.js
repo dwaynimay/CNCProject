@@ -1,0 +1,23 @@
+require('dotenv').config();
+const express    = require('express');
+const cors       = require('cors');
+const { WebSocketServer } = require('ws');
+const mqttSvc    = require('./services/mqttService');
+const apiRoutes  = require('./routes/api');
+
+const app  = express();
+const HTTP = process.env.HTTP_PORT || 3001;
+const WS   = process.env.WS_PORT   || 3002;
+
+app.use(cors());
+app.use(express.json());
+app.use('/api', apiRoutes);
+
+const server = app.listen(HTTP, () =>
+    console.log(`[HTTP] REST API running on :${HTTP}`));
+
+const wss = new WebSocketServer({ port: WS });
+wss.on('listening', () => console.log(`[WS] WebSocket running on :${WS}`));
+
+// Mulai MQTT bridge
+mqttSvc.start(wss);
