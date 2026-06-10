@@ -177,11 +177,11 @@ void loop() {
     // [TEST] Inject nilai arus palsu jika test_overcurrent aktif
     if (testOvercurrentActive) {
         int si = testOvercurrentSensor;
-        payload.current[si].a     = CURRENT_ALARM[si] * 1.5f;  // 150% batas alarm
-        payload.current[si].alarm = true;
-        testOvercurrentActive     = false;   // one-shot: reset setelah satu siklus
+        payload.current[si].ampere = CURRENT_ALARM[si] * 1.5f;  // 150% batas alarm
+        payload.current[si].alarm  = true;
+        testOvercurrentActive      = false;   // one-shot: reset setelah satu siklus
         Serial.printf("[TEST] Inject arus %.2fA ke sensor[%d] %s (alarm threshold: %.2fA)\n",
-                      payload.current[si].a, si, CURRENT_NAMES[si], CURRENT_ALARM[si]);
+                      payload.current[si].ampere, si, CURRENT_NAMES[si], CURRENT_ALARM[si]);
     }
 
     checkAlarms(payload);     // cek alarm SEBELUM publish
