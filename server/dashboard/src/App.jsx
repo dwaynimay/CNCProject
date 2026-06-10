@@ -101,23 +101,27 @@ function TempCard({ sensor, name, limit }) {
 }
 
 // ── RelayCard ─────────────────────────────────────────────────────────
+// Relay NC: relay ON (energized) → circuit PUTUS → mesin MATI
+//           relay OFF              → circuit TERHUBUNG → mesin MENYALA
 function RelayCard({ relayOn, disabled, onOn, onOff }) {
+  // machineOn = true jika mesin benar-benar menyala (relay OFF pada NC)
+  const machineOn = !relayOn;
   return (
     <div className="card relay-card" style={{ alignItems: 'center', textAlign: 'center' }}>
       <div className="card-label">Kontrol Mesin</div>
       <button 
-        className={`btn-power ${relayOn ? 'on' : 'off'}`}
+        className={`btn-power ${machineOn ? 'on' : 'off'}`}
         disabled={disabled}
-        onClick={relayOn ? onOff : onOn}
-        title={disabled ? 'Menunggu koneksi...' : (relayOn ? 'Matikan / Trip' : 'Nyalakan Mesin')}
+        onClick={machineOn ? onOn : onOff}
+        title={disabled ? 'Menunggu koneksi...' : (machineOn ? 'Matikan Mesin' : 'Nyalakan Mesin')}
       >
         <svg viewBox="0 0 24 24" width="28" height="28" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
           <path d="M18.36 6.64a9 9 0 1 1-12.73 0"></path>
           <line x1="12" y1="2" x2="12" y2="12"></line>
         </svg>
       </button>
-      <div className="relay-state-text" style={{ color: disabled ? 'var(--muted)' : (relayOn ? 'var(--green)' : 'var(--red)') }}>
-        {disabled ? 'TIDAK TERSEDIA' : (relayOn ? 'MENYALA' : 'MATI / TRIP')}
+      <div className="relay-state-text" style={{ color: disabled ? 'var(--muted)' : (machineOn ? 'var(--green)' : 'var(--red)') }}>
+        {disabled ? 'TIDAK TERSEDIA' : (machineOn ? 'MESIN MENYALA' : 'MESIN MATI')}
       </div>
     </div>
   );
@@ -143,6 +147,7 @@ export default function App() {
 
   // WebSocket with auto-reconnect
   useEffect(() => {
+
     function connect() {
       const ws = new WebSocket(WS_URL);
       wsRef.current = ws;
@@ -226,10 +231,7 @@ export default function App() {
       {/* ── HEADER ── */}
       <header className="header">
         <div className="header-brand">
-          {/* <div className="header-brand-icon">⚙</div> */}
           <div>
-            {/* <span className="header-brand-name">CNC IoT SCADA</span>
-            <small className="header-brand-sub">Monitoring &amp; Control</small> */}
           </div>
         </div>
         <div className="header-right">
@@ -246,7 +248,6 @@ export default function App() {
             <div className="conn-dot" />
             {connected ? 'Terhubung' : 'Terputus'}
           </div>
-          {/* {lastTs && <span className="header-ts">{lastTs}</span>} */}
         </div>
       </header>
 
