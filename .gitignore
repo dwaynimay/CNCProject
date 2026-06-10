@@ -63,3 +63,17 @@ Thumbs.db
 CLAUDE.md
 GEMINI.md
 skills-lock.json
+
+# Local Tests & Configs
+PRODUCT.md
+test.json
+.impeccable/
+
+# Database & runtime data
+server/backend/data/
+*.db
+*.sqlite
+*.sqlite3
+
+# Analysis artifacts
+firmware_analysis.md
