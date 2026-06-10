@@ -1,8 +1,9 @@
 const mqtt = require('mqtt');
 const cfg  = require('../config/mqtt');
+const { insertTelemetry, logCommand } = require('../db');
 
 let client;
-let lastPayload = {};   // { deviceId: payload }
+let lastPayload = {};   // { deviceId: payload } — cache memori untuk akses cepat
 
 function start(wss) {
     console.log(`[MQTT] Connecting to mqtt://${cfg.host}:${cfg.port} ...`);
@@ -31,6 +32,15 @@ function start(wss) {
         try {
             const data = JSON.parse(message.toString());
             lastPayload[deviceId] = { deviceId, ...data };
+
+            // ── Simpan ke database SQLite ──────────────────────────────────
+            try {
+                insertTelemetry(deviceId, data);
+            } catch (dbErr) {
+                console.error('[DB] Gagal simpan telemetri:', dbErr.message);
+            }
+
+            // ── Forward ke semua dashboard via WebSocket ───────────────────
             const frame = JSON.stringify({ type: 'telemetry', deviceId, data });
             let sent = 0;
             wss.clients.forEach(ws => { if (ws.readyState === 1) { ws.send(frame); sent++; } });
@@ -41,11 +51,18 @@ function start(wss) {
     });
 }
 
-function sendCommand(deviceId, payload) {
+function sendCommand(deviceId, payload, sentBy = 'system') {
     const topic = cfg.topicCmd.replace('%s', deviceId);
     const msg   = typeof payload === 'string' ? payload : JSON.stringify(payload);
-    console.log(`[MQTT] → Publish to ${topic}: ${msg}`);
+    console.log(`[MQTT] → Publish to ${topic}: ${msg} (by: ${sentBy})`);
     client.publish(topic, msg);
+
+    // ── Simpan log command ke database ────────────────────────────────────
+    try {
+        logCommand(deviceId, msg, sentBy);
+    } catch (dbErr) {
+        console.error('[DB] Gagal simpan command log:', dbErr.message);
+    }
 }
 
 function getLatest(deviceId) {
