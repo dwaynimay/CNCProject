@@ -37,6 +37,10 @@ unsigned long lastPublish        = 0;
 unsigned long lastPublishSuccess = 0;  // [SPRINT-2] untuk fail-safe heartbeat
 bool          safeModeLatch      = false;  // latch: relay tidak bisa ON lagi setelah safe mode
 
+// ── [TEST] Simulasi overcurrent dari dashboard ────────────────────────────
+bool testOvercurrentActive = false;   // flag: inject arus palsu pada siklus berikutnya
+int  testOvercurrentSensor = 0;       // index sensor yang di-test (0–4)
+
 // ── [SPRINT-1] Proteksi otomatis — arus, suhu, sensor fault ──────────────
 // Relay NORMALLY CLOSED: relay.on() = energized = kontak NC PUTUS = mesin MATI
 //                        relay.off() = de-energized = kontak NC TERHUBUNG = mesin HIDUP
@@ -100,16 +104,29 @@ void onCommand(const char* topic, const char* payload) {
     if (strstr(payload, "relay_on"))  { relay.on();  return; }  // matikan mesin
     if (strstr(payload, "relay_off")) { relay.off(); return; }  // hidupkan mesin (resume)
     if (strstr(payload, "cal_save"))  { cal.save();  return; }
-    if (strstr(payload, "cal_reset")) { cal.reset(); Serial.println(">> Reset default"); return; }
+    if (strstr(payload, "cal_reset")) { cal.reset(); Serial.println("> Reset default"); return; }
 
     // cal_offset:<index>  — kalibrasi offset sensor ke-N (mesin harus mati)
     if (strncmp(payload, "cal_offset:", 11) == 0) {
         int idx = atoi(payload + 11);
         if (idx >= 0 && idx < (int)NUM_CURRENT_SENSORS) {
             cal.autoOffset(sensors[idx]);
-            Serial.printf(">> cal_offset[%d] done vMid=%.3f\n",
+            Serial.printf(">  cal_offset[%d] done vMid=%.3f\n",
                           idx, cal.getData(idx).vMid);
         }
+        return;
+    }
+
+    // test_overcurrent  atau  test_overcurrent:<index>
+    // Simulasi arus berlebih satu siklus → relay trip otomatis
+    if (strncmp(payload, "test_overcurrent", 16) == 0) {
+        int idx = 0;
+        if (payload[16] == ':') idx = atoi(payload + 17);
+        idx = constrain(idx, 0, (int)NUM_CURRENT_SENSORS - 1);
+        testOvercurrentSensor = idx;
+        testOvercurrentActive = true;
+        Serial.printf("[TEST] Simulasi overcurrent sensor[%d] %s — akan trip pada siklus berikutnya\n",
+                      idx, CURRENT_NAMES[idx]);
         return;
     }
 }
@@ -156,6 +173,16 @@ void loop() {
         payload.current[i] = sensors[i].read(cal.getData(i));
     for (int i = 0; i < NUM_TEMP_SENSORS; i++)
         payload.temp[i] = tempSensors.read(i);
+
+    // [TEST] Inject nilai arus palsu jika test_overcurrent aktif
+    if (testOvercurrentActive) {
+        int si = testOvercurrentSensor;
+        payload.current[si].a     = CURRENT_ALARM[si] * 1.5f;  // 150% batas alarm
+        payload.current[si].alarm = true;
+        testOvercurrentActive     = false;   // one-shot: reset setelah satu siklus
+        Serial.printf("[TEST] Inject arus %.2fA ke sensor[%d] %s (alarm threshold: %.2fA)\n",
+                      payload.current[si].a, si, CURRENT_NAMES[si], CURRENT_ALARM[si]);
+    }
 
     checkAlarms(payload);     // cek alarm SEBELUM publish
     payload.relayOn = relay.isOn();

@@ -128,6 +128,55 @@ function RelayCard({ relayOn, disabled, onOn, onOff }) {
 }
 
 // ── App ───────────────────────────────────────────────────────────────
+// ── TestPanel ─────────────────────────────────────────────────────────────
+function TestPanel({ connected, data, onTest, testResult, testSensor, onSensorChange }) {
+  return (
+    <div className="test-panel">
+      <div className="test-panel-header">
+        <span className="test-icon">🔬</span>
+        <span className="test-title">Test Proteksi Arus Lebih</span>
+        {testResult === 'pass' && (
+          <span className="test-badge pass">✅ Relay Trip Berhasil</span>
+        )}
+        {testResult === 'fail' && (
+          <span className="test-badge fail">❌ Test Gagal</span>
+        )}
+        {testResult === 'running' && (
+          <span className="test-badge running">⏳ Menunggu respons...</span>
+        )}
+      </div>
+      <div className="test-body">
+        <div className="test-desc">
+          Trigger simulasi arus berlebih ke firmware. ESP32 akan inject nilai arus melebihi batas alarm,
+          relay akan trip (mesin mati), dan hasilnya muncul di dashboard.
+        </div>
+        <div className="test-controls">
+          <select
+            id="test-sensor-select"
+            className="test-select"
+            value={testSensor}
+            onChange={e => onSensorChange(Number(e.target.value))}
+            disabled={testResult === 'running'}
+          >
+            {CURRENT_NAMES.map((n, i) => (
+              <option key={i} value={i}>{n} — batas {CURRENT_LIMITS[i]} A</option>
+            ))}
+          </select>
+          <button
+            id="btn-test-overcurrent"
+            className={`btn btn-test${testResult === 'running' ? ' running' : ''}`}
+            disabled={!connected || !data || testResult === 'running'}
+            onClick={() => onTest(testSensor)}
+          >
+            {testResult === 'running' ? '⏳ Menguji...' : '▶ Jalankan Test'}
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+// ── App ───────────────────────────────────────────────────────────────
 export default function App() {
   const [connected,    setConnected]    = useState(false);
   const [data,         setData]         = useState(null);
@@ -137,6 +186,9 @@ export default function App() {
   const [logOpen,      setLogOpen]      = useState(false);
   const [lastTs,       setLastTs]       = useState(null);
   const [theme,        setTheme]        = useState(() => localStorage.getItem('theme') || 'dark');
+  const [testResult,   setTestResult]   = useState(null);  // null | 'running' | 'pass' | 'fail'
+  const [testSensor,   setTestSensor]   = useState(0);     // index sensor yang di-test
+  const testResultRef  = useRef(null);  // mirror testResult untuk akses di ws.onmessage
   const logRef = useRef(null);
   const wsRef  = useRef(null);
 
@@ -176,6 +228,16 @@ export default function App() {
             setRelayOn(frame.data.relayOn);
           }
 
+          // ── Deteksi hasil test overcurrent via telemetri masuk ──
+          if (testResultRef.current === 'running') {
+            const anyAlarm = frame.data.current?.some(s => s?.alarm);
+            if (anyAlarm && frame.data.relayOn) {
+              setTestResult('pass');
+              testResultRef.current = 'pass';
+              addLog('[TEST] ✓ BERHASIL — Relay berhasil trip! Arus lebih terdeteksi.', 'ok');
+            }
+          }
+
           setHistory(prev => {
             const entry = { tick: prev.length };
             CURRENT_NAMES.forEach((_, i) => {
@@ -203,6 +265,31 @@ export default function App() {
     addLog(`Kirim: ${label || cmd}`, 'send');
     const r = await post(`${API}/command/${DEVICE_ID}`, { cmd });
     addLog(r.ok ? `Berhasil: ${r.sent}` : `Error: ${r.error}`, r.ok ? 'ok' : 'error');
+    // Reset hasil test jika relay dihidupkan kembali
+    if (cmd === 'relay_off') { setTestResult(null); testResultRef.current = null; }
+  }
+
+  async function doTestOvercurrent(sensorIdx) {
+    setTestResult('running');
+    testResultRef.current = 'running';
+    addLog(`[TEST] Trigger overcurrent sensor [${sensorIdx}] ${CURRENT_NAMES[sensorIdx]}...`, 'send');
+    const cmd = sensorIdx === 0 ? 'test_overcurrent' : `test_overcurrent:${sensorIdx}`;
+    const r = await post(`${API}/command/${DEVICE_ID}`, { cmd });
+    if (!r.ok) {
+      addLog(`[TEST] Gagal kirim: ${r.error}`, 'error');
+      setTestResult('fail');
+      testResultRef.current = 'fail';
+      return;
+    }
+    addLog('[TEST] Perintah terkirim — menunggu respons firmware (~2 dtk)...', 'ok');
+    // Auto-timeout 10 detik jika tidak ada respons
+    setTimeout(() => {
+      if (testResultRef.current === 'running') {
+        setTestResult('fail');
+        testResultRef.current = 'fail';
+        addLog('[TEST] ✗ Timeout — tidak ada respons alarm dari firmware.', 'error');
+      }
+    }, 10000);
   }
 
   async function doOffset(idx) {
@@ -350,6 +437,18 @@ export default function App() {
           </div>
         </section>
 
+
+        {/* ── TEST PROTEKSI ── */}
+        <section>
+          <TestPanel
+            connected={connected}
+            data={data}
+            onTest={doTestOvercurrent}
+            testResult={testResult}
+            testSensor={testSensor}
+            onSensorChange={setTestSensor}
+          />
+        </section>
 
         {/* ── LOG AKTIVITAS ── */}
         <section>
