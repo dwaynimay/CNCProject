@@ -21,6 +21,7 @@ struct TempReading {
     uint8_t sensorIndex;
     float   celsius;
     bool    alarm;
+    bool    sensorError;  // true jika sensor lepas/tidak terbaca (-127°C)
 };
 
 struct MqttPayload {
