@@ -189,6 +189,7 @@ export default function App() {
   const [testResult,   setTestResult]   = useState(null);  // null | 'running' | 'pass' | 'fail'
   const [testSensor,   setTestSensor]   = useState(0);     // index sensor yang di-test
   const testResultRef  = useRef(null);  // mirror testResult untuk akses di ws.onmessage
+  const relayPendingRef = useRef(false); // true = abaikan relayOn dari telemetri (anti-blink)
   const logRef = useRef(null);
   const wsRef  = useRef(null);
 
@@ -224,7 +225,10 @@ export default function App() {
 
           setData(frame.data);
           setLastTs(nowTs());
-          if (frame.data.relayOn !== undefined) {
+          // Hanya update relayOn dari telemetri jika tidak ada command yang baru dikirim.
+          // Ini mencegah blink: paket telemetri lama (state sebelum relay gerak) tidak
+          // override optimistic update yang sudah kita set saat klik tombol.
+          if (!relayPendingRef.current && frame.data.relayOn !== undefined) {
             setRelayOn(frame.data.relayOn);
           }
 
@@ -263,6 +267,11 @@ export default function App() {
 
   async function sendCmd(cmd, label) {
     addLog(`Kirim: ${label || cmd}`, 'send');
+    // Untuk perintah relay: set pending flag agar telemetri lama tidak override UI
+    if (cmd === 'relay_on' || cmd === 'relay_off') {
+      relayPendingRef.current = true;
+      setTimeout(() => { relayPendingRef.current = false; }, 4000); // 2× publish interval
+    }
     const r = await post(`${API}/command/${DEVICE_ID}`, { cmd });
     addLog(r.ok ? `Berhasil: ${r.sent}` : `Error: ${r.error}`, r.ok ? 'ok' : 'error');
     // Reset hasil test jika relay dihidupkan kembali
