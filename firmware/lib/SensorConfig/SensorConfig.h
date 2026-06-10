@@ -4,7 +4,7 @@
 
 // ── Edit file ini untuk sesuaikan dengan hardware ──────────
 
-constexpr int CURRENT_PINS[5]          = {34, 35, 32, 33, 36};
+constexpr int CURRENT_PINS[5]          = {33, 32, 35, 34, 36};
 constexpr const char* CURRENT_NAMES[5] = {
     "Stepper_X", "Stepper_Y1", "Stepper_Y2", "Stepper_Z", "Spindle"
 };
@@ -27,3 +27,18 @@ constexpr double VCC_ACS_MV            = 5000.0;
 
 constexpr int SAMPLE_CALIBRATION       = 2000;
 constexpr int SAMPLE_RUNTIME           = 300;
+
+// ── [SPRINT-2] Jaringan & Waktu ─────────────────────────────
+constexpr const char* NTP_SERVER       = "pool.ntp.org";
+constexpr long        TZ_OFFSET_SEC    = 7L * 3600L;  // WIB — UTC+7
+constexpr int         DST_OFFSET_SEC   = 0;            // Indonesia tidak pakai DST
+constexpr uint32_t    NTP_TIMEOUT_MS   = 10000;        // 10 detik max wait NTP sync
+
+// ── [SPRINT-2] Fail-safe Heartbeat ──────────────────────────
+// Jika relay ON dan tidak berhasil publish selama ini → relay OFF (safe state)
+constexpr uint32_t HEARTBEAT_TIMEOUT_MS = 60000;  // 60 detik
+
+// ── Named sensor counts (ganti magic number) ─────────────────
+constexpr uint8_t NUM_CURRENT_SENSORS  = 5;
+constexpr uint8_t NUM_TEMP_SENSORS     = 2;
+

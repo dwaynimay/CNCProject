@@ -1,4 +1,6 @@
 #include <Arduino.h>
+#include <esp_task_wdt.h>    // [SPRINT-1] Hardware Watchdog Timer
+#include <time.h>            // [SPRINT-2] NTP timestamp
 #include "types.h"
 #include "SensorConfig.h"
 #include "ACS712.h"
@@ -11,11 +13,12 @@
 // ── Credentials — dipisah agar tidak masuk ke git ─────────
 #include "credentials.h"
 
-// Interval kirim data ke broker (ms)
-#define PUBLISH_INTERVAL 2000
+// ── Interval & timing constants ───────────────────────────
+constexpr uint32_t PUBLISH_INTERVAL_MS = 2000;   // kirim data ke broker (ms)
+constexpr uint8_t  WDT_TIMEOUT_S       = 30;     // watchdog timeout (detik)
 
 // ── Instance semua modul ──────────────────────────────────
-ACS712 sensors[5] = {
+ACS712 sensors[NUM_CURRENT_SENSORS] = {
     {0, CURRENT_PINS[0], CURRENT_TYPES[0]},
     {1, CURRENT_PINS[1], CURRENT_TYPES[1]},
     {2, CURRENT_PINS[2], CURRENT_TYPES[2]},
@@ -28,62 +31,138 @@ DS18B20Manager tempSensors;
 RelayControl   relay;
 MqttClient     mqtt;
 #undef cli
-SerialCLI      cli(cal, sensors, 5);
+SerialCLI      cli(cal, sensors, NUM_CURRENT_SENSORS);
 
-unsigned long lastPublish = 0;
+unsigned long lastPublish        = 0;
+unsigned long lastPublishSuccess = 0;  // [SPRINT-2] untuk fail-safe heartbeat
+bool          safeModeLatch      = false;  // latch: relay tidak bisa ON lagi setelah safe mode
 
-// ── Proteksi otomatis ─────────────────────────────────────
+// ── [SPRINT-1] Proteksi otomatis — arus, suhu, sensor fault ──────────────
+// Relay NORMALLY CLOSED: relay.on() = energized = kontak NC PUTUS = mesin MATI
+//                        relay.off() = de-energized = kontak NC TERHUBUNG = mesin HIDUP
+//
+// Ketika alarm terpicu → relay.on() untuk MEMUTUS mesin (safe state)
 void checkAlarms(const MqttPayload& p) {
-    for (int i = 0; i < 5; i++) if (p.current[i].alarm) { relay.off(); return; }
-    for (int i = 0; i < 2; i++) if (p.temp[i].alarm)    { relay.off(); return; }
+    for (int i = 0; i < NUM_CURRENT_SENSORS; i++) {
+        if (p.current[i].alarm) {
+            Serial.printf("[ALARM] Arus sensor[%d] %s — relay ON (matikan mesin)\n",
+                          i, CURRENT_NAMES[i]);
+            relay.on();   // NC: energize = putus kontak = mesin MATI
+            return;
+        }
+    }
+    for (int i = 0; i < NUM_TEMP_SENSORS; i++) {
+        if (p.temp[i].sensorError) {
+            Serial.printf("[ALARM] Sensor suhu[%d] %s DISCONNECT — relay ON (matikan mesin)!\n",
+                          i, TEMP_NAMES[i]);
+            relay.on();   // NC: energize = putus kontak = mesin MATI
+            return;
+        }
+        if (p.temp[i].alarm) {
+            Serial.printf("[ALARM] Suhu sensor[%d] %s %.1f°C — relay ON (matikan mesin)\n",
+                          i, TEMP_NAMES[i], p.temp[i].celsius);
+            relay.on();   // NC: energize = putus kontak = mesin MATI
+            return;
+        }
+    }
+}
+
+// ── [SPRINT-2] Fail-safe heartbeat ───────────────────────────────────────
+// Jika tidak ada publish sukses dalam HEARTBEAT_TIMEOUT_MS →
+// relay.on() untuk MEMUTUS mesin (NC: energize = kontak putus = mesin MATI)
+// Kunci safeModeLatch sampai reboot agar mesin tidak bisa dinyalakan lagi
+void checkHeartbeat() {
+    if (safeModeLatch) {
+        relay.on();   // NC: paksa energize setiap loop selama safe mode aktif
+        return;
+    }
+
+    uint32_t elapsed = millis() - lastPublishSuccess;
+    if (elapsed > HEARTBEAT_TIMEOUT_MS) {
+        safeModeLatch = true;
+        Serial.printf(
+            "[SAFE] Tidak ada publish sukses selama %lus — relay ON (matikan mesin)! Reboot untuk reset.\n",
+            elapsed / 1000);
+        relay.on();   // NC: energize = putus kontak = mesin MATI
+    }
 }
 
 // ── Perintah dari dashboard via MQTT ─────────────────────
+// NC semantics: relay_on  = energize = kontak NC putus = mesin MATI
+//               relay_off = de-energize = kontak NC terhubung = mesin HIDUP
 void onCommand(const char* topic, const char* payload) {
-    if (strstr(payload, "relay_on"))  { relay.on();  return; }
-    if (strstr(payload, "relay_off")) { relay.off(); return; }
+    // Jika safe mode aktif, tolak perintah relay_off (mencegah mesin dinyalakan kembali)
+    if (safeModeLatch && strstr(payload, "relay_off")) {
+        Serial.println("[SAFE] Perintah relay_off ditolak — safe mode aktif, reboot untuk reset.");
+        return;
+    }
+
+    if (strstr(payload, "relay_on"))  { relay.on();  return; }  // matikan mesin
+    if (strstr(payload, "relay_off")) { relay.off(); return; }  // hidupkan mesin (resume)
     if (strstr(payload, "cal_save"))  { cal.save();  return; }
     if (strstr(payload, "cal_reset")) { cal.reset(); Serial.println(">> Reset default"); return; }
 
     // cal_offset:<index>  — kalibrasi offset sensor ke-N (mesin harus mati)
     if (strncmp(payload, "cal_offset:", 11) == 0) {
         int idx = atoi(payload + 11);
-        if (idx >= 0 && idx < 5) {
+        if (idx >= 0 && idx < (int)NUM_CURRENT_SENSORS) {
             cal.autoOffset(sensors[idx]);
-            Serial.printf(">> cal_offset[%d] done vMid=%.3f\n", idx, cal.getData(idx).vMid);
+            Serial.printf(">> cal_offset[%d] done vMid=%.3f\n",
+                          idx, cal.getData(idx).vMid);
         }
         return;
     }
-
 }
 
 void setup() {
-    Serial.begin(9600);
+    Serial.begin(115200);
+
+    // [SPRINT-1] Aktifkan Hardware Watchdog Timer
+    esp_task_wdt_init(WDT_TIMEOUT_S, true);  // panic=true → reboot otomatis
+    esp_task_wdt_add(NULL);
+    Serial.printf("[WDT] Hardware watchdog aktif — timeout %ds\n", WDT_TIMEOUT_S);
+
     cal.load();
     tempSensors.begin();
-    relay.begin();
+    relay.begin();      // NC: relay OFF saat boot = kontak NC terhubung = mesin bisa jalan
     cli.begin();
+
     mqtt.setCommandCallback(onCommand);
     mqtt.begin(WIFI_SSID, WIFI_PASS, MQTT_HOST, MQTT_PORT, MQTT_ID);
+    // Setelah begin(): WiFi connect + NTP sync sudah dilakukan di dalam MqttClient
+
+    // Init lastPublishSuccess di awal — beri grace period 2× HEARTBEAT sebelum cek
+    lastPublishSuccess = millis();
 }
 
 void loop() {
-    mqtt.loop();
+    // [SPRINT-1] Reset watchdog
+    esp_task_wdt_reset();
+
+    mqtt.loop();   // non-blocking
     cli.loop();
 
-    if (millis() - lastPublish < PUBLISH_INTERVAL) return;
+    // [SPRINT-2] Cek fail-safe heartbeat setiap iterasi loop
+    checkHeartbeat();
+
+    if (millis() - lastPublish < PUBLISH_INTERVAL_MS) return;
     lastPublish = millis();
 
+    // Baca semua sensor
     MqttPayload payload;
-    payload.timestamp = millis();
-    for (int i = 0; i < 5; i++)
+    // [SPRINT-2] timestamp diisi di dalam mqtt.publish() via NTP/fallback
+    payload.timestamp = 0;  // placeholder — diisi ulang saat publish
+    for (int i = 0; i < NUM_CURRENT_SENSORS; i++)
         payload.current[i] = sensors[i].read(cal.getData(i));
-    for (int i = 0; i < 2; i++)
+    for (int i = 0; i < NUM_TEMP_SENSORS; i++)
         payload.temp[i] = tempSensors.read(i);
 
-    checkAlarms(payload);
+    checkAlarms(payload);     // cek alarm SEBELUM publish
     payload.relayOn = relay.isOn();
 
-    mqtt.publish(payload);
-    cli.printLive(payload.current, 5);
+    // [SPRINT-2] Track publish sukses untuk heartbeat fail-safe
+    bool ok = mqtt.publish(payload);
+    if (ok) lastPublishSuccess = millis();
+
+    cli.printLive(payload.current, NUM_CURRENT_SENSORS);
 }
