@@ -15,7 +15,7 @@ bool MqttClient::isConnected() { return _client.connected(); }
 // [SPRINT-2] Cek apakah NTP sudah tersinkronisasi (timestamp > tahun 2020)
 bool MqttClient::isNtpSynced() {
     time_t now = time(nullptr);
-    return (now > 1577836800UL);  // 2020-01-01 00:00:00 UTC
+    return (now > NTP_EPOCH_2020);
 }
 
 // ── [SPRINT-1 FIX #2] WiFi connect dengan timeout 30s → ESP.restart() ──────
@@ -59,7 +59,7 @@ void MqttClient::begin(const char* ssid, const char* pass,
         Serial.printf("\n[NTP] OK: %s WIB\n", timeBuf);
     }
 
-    _client.setBufferSize(512);
+    _client.setBufferSize(MQTT_PAYLOAD_BUF_SIZE);
     _client.setServer(host, port);
     _client.setCallback(_onMessage);
 
@@ -84,7 +84,7 @@ void MqttClient::loop() {
 // ── Single non-blocking reconnect attempt ─────────────────────────────────
 bool MqttClient::_attemptReconnect() {
     Serial.print("[MQTT] Connect...");
-    char statusTopic[64];
+    char statusTopic[MQTT_TOPIC_BUF_SIZE];
     snprintf(statusTopic, sizeof(statusTopic), "cnc/%s/status", _clientId);
 
     // LWT: jika ESP32 disconnect paksa → broker kirim "offline"
@@ -92,7 +92,7 @@ bool MqttClient::_attemptReconnect() {
                         statusTopic, 0, true, "offline")) {
         Serial.println(" OK");
         _client.publish(statusTopic, "online", true);
-        char cmdTopic[64];
+        char cmdTopic[MQTT_TOPIC_BUF_SIZE];
         snprintf(cmdTopic, sizeof(cmdTopic), "cnc/%s/command", _clientId);
         _client.subscribe(cmdTopic);
         return true;
@@ -105,7 +105,7 @@ bool MqttClient::_attemptReconnect() {
 
 // ── [SPRINT-2 FIX #5] Publish telemetry — return true jika berhasil ────────
 bool MqttClient::publish(const MqttPayload& p) {
-    char buf[512];
+    char buf[MQTT_PAYLOAD_BUF_SIZE];
     int  pos = 0;
 
     // [SPRINT-2] Gunakan NTP timestamp (Unix epoch) jika sudah sync,
@@ -139,7 +139,7 @@ bool MqttClient::publish(const MqttPayload& p) {
     pos += snprintf(buf + pos, sizeof(buf) - pos,
                     "],\"relayOn\":%s}", p.relayOn ? "true" : "false");
 
-    char topic[64];
+    char topic[MQTT_TOPIC_BUF_SIZE];
     snprintf(topic, sizeof(topic), "cnc/%s/telemetry", _clientId);
 
     bool ok = _client.publish(topic, buf);
@@ -155,8 +155,8 @@ bool MqttClient::publish(const MqttPayload& p) {
 // ── Static MQTT message callback ─────────────────────────────────────────
 void MqttClient::_onMessage(char* topic, byte* payload, unsigned int len) {
     if (!_instance || !_instance->_cmdCb) return;
-    char buf[256];
-    memcpy(buf, payload, min(len, 255u));
-    buf[min(len, 255u)] = '\0';
+    char buf[MQTT_CMD_BUF_SIZE];
+    memcpy(buf, payload, min(len, (unsigned)(MQTT_CMD_BUF_SIZE - 1)));
+    buf[min(len, (unsigned)(MQTT_CMD_BUF_SIZE - 1))] = '\0';
     _instance->_cmdCb(topic, buf);
 }

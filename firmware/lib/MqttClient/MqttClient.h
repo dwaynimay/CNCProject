@@ -7,10 +7,11 @@
 
 using MqttCommandCallback = std::function<void(const char* topic, const char* payload)>;
 
-// Timeout WiFi connect sebelum reboot (ms)
-constexpr uint32_t WIFI_CONNECT_TIMEOUT_MS  = 30000;
-// Interval antar percobaan reconnect MQTT (ms) — non-blocking
-constexpr uint32_t MQTT_RECONNECT_INTERVAL  = 5000;
+constexpr uint32_t WIFI_CONNECT_TIMEOUT_MS  = 30000;   // timeout WiFi sebelum reboot (ms)
+constexpr uint32_t MQTT_RECONNECT_INTERVAL  = 5000;    // interval reconnect non-blocking (ms)
+constexpr uint16_t MQTT_PAYLOAD_BUF_SIZE    = 512;     // buffer JSON telemetry (bytes)
+constexpr uint16_t MQTT_CMD_BUF_SIZE        = 256;     // buffer command inbound (bytes)
+constexpr uint8_t  MQTT_TOPIC_BUF_SIZE      = 64;      // buffer nama topic (bytes)
 
 class MqttClient {
 public:
