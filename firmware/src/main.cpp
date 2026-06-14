@@ -9,6 +9,7 @@
 #include "RelayControl.h"
 #include "MqttClient.h"
 #include "SerialCLI.h"
+#include "EventLog.h"
 
 // ── Credentials — dipisah agar tidak masuk ke git ─────────
 #include "credentials.h"
@@ -30,8 +31,9 @@ Calibration    cal;
 DS18B20Manager tempSensors;
 RelayControl   relay;
 MqttClient     mqtt;
+EventLog       eventLog;
 #undef cli
-SerialCLI      cli(cal, sensors, NUM_CURRENT_SENSORS);
+SerialCLI      cli(cal, sensors, NUM_CURRENT_SENSORS, eventLog);
 
 unsigned long lastPublish        = 0;
 unsigned long lastPublishSuccess = 0;  // [SPRINT-2] untuk fail-safe heartbeat
@@ -45,29 +47,52 @@ int  testOvercurrentSensor = 0;       // index sensor yang di-test (0–4)
 // Relay NORMALLY CLOSED: relay.on() = energized = kontak NC PUTUS = mesin MATI
 //                        relay.off() = de-energized = kontak NC TERHUBUNG = mesin HIDUP
 //
-// Ketika alarm terpicu → relay.on() untuk MEMUTUS mesin (safe state)
+// [SPRINT-4] Edge detection: event hanya dicatat sekali per transisi clear→alarm
 void checkAlarms(const MqttPayload& p) {
+    static bool prevCurAlarm[NUM_CURRENT_SENSORS] = {};
+    static bool prevTmpAlarm[NUM_TEMP_SENSORS]    = {};
+
     for (int i = 0; i < NUM_CURRENT_SENSORS; i++) {
         if (p.current[i].alarm) {
-            Serial.printf("[ALARM] Arus sensor[%d] %s — relay ON (matikan mesin)\n",
-                          i, CURRENT_NAMES[i]);
-            relay.on();   // NC: energize = putus kontak = mesin MATI
+            if (!prevCurAlarm[i]) {
+                time_t now; time(&now);
+                eventLog.addAndSave({(uint32_t)now, SensorType::CURRENT, (uint8_t)i,
+                                      p.current[i].ampere, AlarmType::OVERCURRENT});
+                Serial.printf("[ALARM] Arus sensor[%d] %s %.2fA — relay ON (matikan mesin)\n",
+                              i, CURRENT_NAMES[i], p.current[i].ampere);
+            }
+            prevCurAlarm[i] = true;
+            relay.on();
             return;
         }
+        prevCurAlarm[i] = false;
     }
     for (int i = 0; i < NUM_TEMP_SENSORS; i++) {
         if (p.temp[i].sensorError) {
-            Serial.printf("[ALARM] Sensor suhu[%d] %s DISCONNECT — relay ON (matikan mesin)!\n",
-                          i, TEMP_NAMES[i]);
-            relay.on();   // NC: energize = putus kontak = mesin MATI
+            if (!prevTmpAlarm[i]) {
+                time_t now; time(&now);
+                eventLog.addAndSave({(uint32_t)now, SensorType::TEMP, (uint8_t)i,
+                                      p.temp[i].celsius, AlarmType::SENSOR_DISCONNECT});
+                Serial.printf("[ALARM] Sensor suhu[%d] %s DISCONNECT — relay ON (matikan mesin)!\n",
+                              i, TEMP_NAMES[i]);
+            }
+            prevTmpAlarm[i] = true;
+            relay.on();
             return;
         }
         if (p.temp[i].alarm) {
-            Serial.printf("[ALARM] Suhu sensor[%d] %s %.1f°C — relay ON (matikan mesin)\n",
-                          i, TEMP_NAMES[i], p.temp[i].celsius);
-            relay.on();   // NC: energize = putus kontak = mesin MATI
+            if (!prevTmpAlarm[i]) {
+                time_t now; time(&now);
+                eventLog.addAndSave({(uint32_t)now, SensorType::TEMP, (uint8_t)i,
+                                      p.temp[i].celsius, AlarmType::OVERTEMP});
+                Serial.printf("[ALARM] Suhu sensor[%d] %s %.1f°C — relay ON (matikan mesin)\n",
+                              i, TEMP_NAMES[i], p.temp[i].celsius);
+            }
+            prevTmpAlarm[i] = true;
+            relay.on();
             return;
         }
+        prevTmpAlarm[i] = false;
     }
 }
 
@@ -107,8 +132,9 @@ void onCommand(const char* topic, const char* payload) {
     if (strstr(payload, "cal_reset")) { cal.reset(); Serial.println("> Reset default"); return; }
 
     // cal_offset:<index>  — kalibrasi offset sensor ke-N (mesin harus mati)
-    if (strncmp(payload, "cal_offset:", 11) == 0) {
-        int idx = atoi(payload + 11);
+    static constexpr char CMD_CAL_OFFSET[] = "cal_offset:";
+    if (strncmp(payload, CMD_CAL_OFFSET, sizeof(CMD_CAL_OFFSET) - 1) == 0) {
+        int idx = atoi(payload + sizeof(CMD_CAL_OFFSET) - 1);
         if (idx >= 0 && idx < (int)NUM_CURRENT_SENSORS) {
             cal.autoOffset(sensors[idx]);
             Serial.printf(">  cal_offset[%d] done vMid=%.3f\n",
@@ -119,9 +145,10 @@ void onCommand(const char* topic, const char* payload) {
 
     // test_overcurrent  atau  test_overcurrent:<index>
     // Simulasi arus berlebih satu siklus → relay trip otomatis
-    if (strncmp(payload, "test_overcurrent", 16) == 0) {
+    static constexpr char CMD_TEST_OC[] = "test_overcurrent";
+    if (strncmp(payload, CMD_TEST_OC, sizeof(CMD_TEST_OC) - 1) == 0) {
         int idx = 0;
-        if (payload[16] == ':') idx = atoi(payload + 17);
+        if (payload[sizeof(CMD_TEST_OC) - 1] == ':') idx = atoi(payload + sizeof(CMD_TEST_OC));
         idx = constrain(idx, 0, (int)NUM_CURRENT_SENSORS - 1);
         testOvercurrentSensor = idx;
         testOvercurrentActive = true;
@@ -140,6 +167,7 @@ void setup() {
     Serial.printf("[WDT] Hardware watchdog aktif — timeout %ds\n", WDT_TIMEOUT_S);
 
     cal.load();
+    eventLog.load();
     tempSensors.begin();
     relay.begin();      // NC: relay OFF saat boot = kontak NC terhubung = mesin bisa jalan
     cli.begin();
@@ -171,6 +199,8 @@ void loop() {
     payload.timestamp = 0;  // placeholder — diisi ulang saat publish
     for (int i = 0; i < NUM_CURRENT_SENSORS; i++)
         payload.current[i] = sensors[i].read(cal.getData(i));
+    tempSensors.requestAll();  // satu request untuk semua sensor, non-blocking
+    delay(DS18B20_CONVERSION_MS);
     for (int i = 0; i < NUM_TEMP_SENSORS; i++)
         payload.temp[i] = tempSensors.read(i);
 

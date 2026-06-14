@@ -1,7 +1,7 @@
 #include "SerialCLI.h"
 
-SerialCLI::SerialCLI(Calibration& cal, ACS712* sensors, uint8_t n)
-    : _cal(cal), _sensors(sensors), _n(n), _active(0) {}
+SerialCLI::SerialCLI(Calibration& cal, ACS712* sensors, uint8_t n, EventLog& log)
+    : _cal(cal), _sensors(sensors), _n(n), _active(0), _log(log) {}
 
 void SerialCLI::begin()  { printHelp(); }
 void SerialCLI::loop()   { if (Serial.available()) handleChar(Serial.read()); }
@@ -14,6 +14,7 @@ void SerialCLI::handleChar(char c) {
         case 's': _cal.save();    break;
         case 'l': _cal.load();    break;
         case 'r': _cal.reset();   Serial.println(">> Reset default"); break;
+        case 'e': _log.print();   break;
         case '?': printHelp();    break;
     }
 }
@@ -42,7 +43,7 @@ void SerialCLI::printStatus() {
 
 void SerialCLI::printHelp() {
     Serial.println("-------------------------------------------");
-    Serial.println("c=offset  z=status  p=sensor");
+    Serial.println("c=offset  z=status  p=sensor  e=eventlog");
     Serial.println("s=simpan  l=load   r=reset   ?=help");
     Serial.println("-------------------------------------------");
 }
