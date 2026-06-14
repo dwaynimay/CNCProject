@@ -4,8 +4,9 @@ import {
 } from 'recharts';
 
 const DEVICE_ID      = 'cnc-esp32';
-const API            = import.meta.env.VITE_API_URL || 'http://localhost:3001/api';
-const WS_URL         = import.meta.env.VITE_WS_URL  || 'ws://localhost:3002';
+const hostname       = window.location.hostname;
+const API            = import.meta.env.VITE_API_URL || `http://${hostname}:3001/api`;
+const WS_URL         = import.meta.env.VITE_WS_URL  || `ws://${hostname}:3002`;
 
 const CURRENT_NAMES  = ['Stepper X', 'Stepper Y1', 'Stepper Y2', 'Stepper Z', 'Spindle'];
 const CURRENT_LIMITS = [3.0, 3.0, 3.0, 2.0, 8.0];
@@ -50,7 +51,7 @@ function CurrentCard({ sensor, name, limit, onCal }) {
     <div className={`card ${cls}`}>
       <div className="card-label">{name}</div>
       <div className="card-value" style={{ color: valColor }}>
-        {nc ? '—' : fmt(a, 4)}
+        {nc ? '—' : fmt(Math.abs(a), 4)}
         <span className="card-unit">A</span>
       </div>
       <div className="bar-track">
@@ -245,7 +246,8 @@ export default function App() {
           setHistory(prev => {
             const entry = { tick: prev.length };
             CURRENT_NAMES.forEach((_, i) => {
-              entry[`c${i}`] = frame.data.current?.[i]?.a ?? null;
+              const val = frame.data.current?.[i]?.a;
+              entry[`c${i}`] = val != null ? Math.abs(val) : null;
             });
             return [...prev.slice(-(HISTORY_LEN - 1)), entry];
           });
