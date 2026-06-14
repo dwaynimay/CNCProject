@@ -8,6 +8,7 @@ class DS18B20Manager {
 public:
     DS18B20Manager();
     void        begin();
+    void        requestAll();                    // panggil sekali sebelum loop read
     TempReading read(uint8_t index);
     uint8_t     count();
 private:
