@@ -20,13 +20,23 @@ constexpr float TEMP_ALARM[2]          = {60.0f, 55.0f};
 constexpr int  RELAY_PIN               = 5;
 constexpr bool RELAY_ACTIVE_LOW        = true;
 
+constexpr int  ESTOP_PIN               = 25;   // HIGH = E-Stop aktif ke CNC Shield
+
 constexpr double VD_RATIO              = 20.0 / 30.0;
 constexpr double ADC_MAX               = 4095.0;
 constexpr double ADC_VREF_MV           = 3300.0;
 constexpr double VCC_ACS_MV            = 5000.0;
 
+constexpr double ACS712_20A_MVPA       = 100.0;  // mV per Ampere — ACS712-20A
+constexpr double ACS712_30A_MVPA       = 66.0;   // mV per Ampere — ACS712-30A
+
 constexpr int SAMPLE_CALIBRATION       = 2000;
 constexpr int SAMPLE_RUNTIME           = 300;
+constexpr uint32_t ADC_SAMPLE_DELAY_US = 200;    // delay antar sample ADC (µs)
+
+constexpr uint32_t DS18B20_CONVERSION_MS = 800;  // waktu konversi DS18B20 12-bit (ms)
+
+constexpr uint32_t NTP_EPOCH_2020      = 1577836800UL;  // 2020-01-01 00:00:00 UTC
 
 // ── [SPRINT-2] Jaringan & Waktu ─────────────────────────────
 constexpr const char* NTP_SERVER       = "pool.ntp.org";
