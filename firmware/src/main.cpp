@@ -10,6 +10,7 @@
 #include "MqttClient.h"
 #include "SerialCLI.h"
 #include "EventLog.h"
+#include "Logger.h"
 
 // ── Credentials — dipisah agar tidak masuk ke git ─────────
 #include "credentials.h"
@@ -58,8 +59,8 @@ void checkAlarms(const MqttPayload& p) {
                 time_t now; time(&now);
                 eventLog.addAndSave({(uint32_t)now, SensorType::CURRENT, (uint8_t)i,
                                       p.current[i].ampere, AlarmType::OVERCURRENT});
-                Serial.printf("[ALARM] Arus sensor[%d] %s %.2fA — relay ON (matikan mesin)\n",
-                              i, CURRENT_NAMES[i], p.current[i].ampere);
+                LOG_E("[ALARM] Arus sensor[%d] %s %.2fA — relay ON (matikan mesin)\n",
+                      i, CURRENT_NAMES[i], p.current[i].ampere);
             }
             prevCurAlarm[i] = true;
             relay.on();
@@ -73,8 +74,8 @@ void checkAlarms(const MqttPayload& p) {
                 time_t now; time(&now);
                 eventLog.addAndSave({(uint32_t)now, SensorType::TEMP, (uint8_t)i,
                                       p.temp[i].celsius, AlarmType::SENSOR_DISCONNECT});
-                Serial.printf("[ALARM] Sensor suhu[%d] %s DISCONNECT — relay ON (matikan mesin)!\n",
-                              i, TEMP_NAMES[i]);
+                LOG_E("[ALARM] Sensor suhu[%d] %s DISCONNECT — relay ON (matikan mesin)!\n",
+                      i, TEMP_NAMES[i]);
             }
             prevTmpAlarm[i] = true;
             relay.on();
@@ -85,8 +86,8 @@ void checkAlarms(const MqttPayload& p) {
                 time_t now; time(&now);
                 eventLog.addAndSave({(uint32_t)now, SensorType::TEMP, (uint8_t)i,
                                       p.temp[i].celsius, AlarmType::OVERTEMP});
-                Serial.printf("[ALARM] Suhu sensor[%d] %s %.1f°C — relay ON (matikan mesin)\n",
-                              i, TEMP_NAMES[i], p.temp[i].celsius);
+                LOG_E("[ALARM] Suhu sensor[%d] %s %.1f°C — relay ON (matikan mesin)\n",
+                      i, TEMP_NAMES[i], p.temp[i].celsius);
             }
             prevTmpAlarm[i] = true;
             relay.on();
@@ -109,9 +110,8 @@ void checkHeartbeat() {
     uint32_t elapsed = millis() - lastPublishSuccess;
     if (elapsed > HEARTBEAT_TIMEOUT_MS) {
         safeModeLatch = true;
-        Serial.printf(
-            "[SAFE] Tidak ada publish sukses selama %lus — relay ON (matikan mesin)! Reboot untuk reset.\n",
-            elapsed / 1000);
+        LOG_W("[SAFE] Tidak ada publish sukses selama %lus — relay ON (matikan mesin)! Reboot untuk reset.\n",
+              elapsed / 1000);
         relay.on();   // NC: energize = putus kontak = mesin MATI
     }
 }
@@ -122,14 +122,14 @@ void checkHeartbeat() {
 void onCommand(const char* topic, const char* payload) {
     // Jika safe mode aktif, tolak perintah relay_off (mencegah mesin dinyalakan kembali)
     if (safeModeLatch && strstr(payload, "relay_off")) {
-        Serial.println("[SAFE] Perintah relay_off ditolak — safe mode aktif, reboot untuk reset.");
+        LOG_W("[SAFE] Perintah relay_off ditolak — safe mode aktif, reboot untuk reset.\n");
         return;
     }
 
     if (strstr(payload, "relay_on"))  { relay.on();  return; }  // matikan mesin
     if (strstr(payload, "relay_off")) { relay.off(); return; }  // hidupkan mesin (resume)
     if (strstr(payload, "cal_save"))  { cal.save();  return; }
-    if (strstr(payload, "cal_reset")) { cal.reset(); Serial.println("> Reset default"); return; }
+    if (strstr(payload, "cal_reset")) { cal.reset(); LOG_I("> Reset default\n"); return; }
 
     // cal_offset:<index>  — kalibrasi offset sensor ke-N (mesin harus mati)
     static constexpr char CMD_CAL_OFFSET[] = "cal_offset:";
@@ -137,8 +137,8 @@ void onCommand(const char* topic, const char* payload) {
         int idx = atoi(payload + sizeof(CMD_CAL_OFFSET) - 1);
         if (idx >= 0 && idx < (int)NUM_CURRENT_SENSORS) {
             cal.autoOffset(sensors[idx]);
-            Serial.printf(">  cal_offset[%d] done vMid=%.3f\n",
-                          idx, cal.getData(idx).vMid);
+            LOG_D(">  cal_offset[%d] done vMid=%.3f\n",
+                  idx, cal.getData(idx).vMid);
         }
         return;
     }
@@ -152,8 +152,8 @@ void onCommand(const char* topic, const char* payload) {
         idx = constrain(idx, 0, (int)NUM_CURRENT_SENSORS - 1);
         testOvercurrentSensor = idx;
         testOvercurrentActive = true;
-        Serial.printf("[TEST] Simulasi overcurrent sensor[%d] %s — akan trip pada siklus berikutnya\n",
-                      idx, CURRENT_NAMES[idx]);
+        LOG_D("[TEST] Simulasi overcurrent sensor[%d] %s — akan trip pada siklus berikutnya\n",
+              idx, CURRENT_NAMES[idx]);
         return;
     }
 }
@@ -164,7 +164,7 @@ void setup() {
     // [SPRINT-1] Aktifkan Hardware Watchdog Timer
     esp_task_wdt_init(WDT_TIMEOUT_S, true);  // panic=true → reboot otomatis
     esp_task_wdt_add(NULL);
-    Serial.printf("[WDT] Hardware watchdog aktif — timeout %ds\n", WDT_TIMEOUT_S);
+    LOG_I("[WDT] Hardware watchdog aktif — timeout %ds\n", WDT_TIMEOUT_S);
 
     cal.load();
     eventLog.load();
@@ -210,8 +210,8 @@ void loop() {
         payload.current[si].ampere = CURRENT_ALARM[si] * 1.5f;  // 150% batas alarm
         payload.current[si].alarm  = true;
         testOvercurrentActive      = false;   // one-shot: reset setelah satu siklus
-        Serial.printf("[TEST] Inject arus %.2fA ke sensor[%d] %s (alarm threshold: %.2fA)\n",
-                      payload.current[si].ampere, si, CURRENT_NAMES[si], CURRENT_ALARM[si]);
+        LOG_D("[TEST] Inject arus %.2fA ke sensor[%d] %s (alarm threshold: %.2fA)\n",
+              payload.current[si].ampere, si, CURRENT_NAMES[si], CURRENT_ALARM[si]);
     }
 
     checkAlarms(payload);     // cek alarm SEBELUM publish

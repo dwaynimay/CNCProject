@@ -1,5 +1,6 @@
 #include "MqttClient.h"
 #include <time.h>        // [SPRINT-2] NTP timestamp
+#include "Logger.h"
 
 // Topic: cnc/<clientId>/telemetry  (ESP32 → broker)
 //        cnc/<clientId>/command    (broker → ESP32)
@@ -24,39 +25,39 @@ void MqttClient::begin(const char* ssid, const char* pass,
                        const char* host, uint16_t port, const char* clientId) {
     _clientId = clientId;
     WiFi.begin(ssid, pass);
-    Serial.print("[WiFi] Menghubungkan");
+    LOG_I("[WiFi] Menghubungkan");
 
     unsigned long startMs = millis();
     while (WiFi.status() != WL_CONNECTED) {
         if (millis() - startMs > WIFI_CONNECT_TIMEOUT_MS) {
-            Serial.printf("\n[WiFi] TIMEOUT %lus — reboot!\n",
-                          WIFI_CONNECT_TIMEOUT_MS / 1000);
+            LOG_W("\n[WiFi] TIMEOUT %lus — reboot!\n",
+                  WIFI_CONNECT_TIMEOUT_MS / 1000);
             delay(500);
             ESP.restart();
         }
         delay(500);
-        Serial.print(".");
+        LOG_I(".");
     }
-    Serial.printf("\n[WiFi] OK: %s  RSSI: %d dBm\n",
-                  WiFi.localIP().toString().c_str(), WiFi.RSSI());
+    LOG_I("\n[WiFi] OK: %s  RSSI: %d dBm\n",
+          WiFi.localIP().toString().c_str(), WiFi.RSSI());
 
     // [SPRINT-2] Sinkronisasi waktu via NTP (non-blocking dengan timeout)
-    Serial.print("[NTP] Sync");
+    LOG_I("[NTP] Sync");
     configTime(TZ_OFFSET_SEC, DST_OFFSET_SEC, NTP_SERVER);
     struct tm timeinfo;
     unsigned long ntpStart = millis();
     while (!getLocalTime(&timeinfo)) {
         if (millis() - ntpStart > NTP_TIMEOUT_MS) {
-            Serial.println("\n[NTP] TIMEOUT — timestamp akan pakai millis()/1000 sebagai fallback");
+            LOG_W("\n[NTP] TIMEOUT — timestamp akan pakai millis()/1000 sebagai fallback\n");
             break;
         }
         delay(200);
-        Serial.print(".");
+        LOG_I(".");
     }
     if (isNtpSynced()) {
         char timeBuf[32];
         strftime(timeBuf, sizeof(timeBuf), "%Y-%m-%d %H:%M:%S", &timeinfo);
-        Serial.printf("\n[NTP] OK: %s WIB\n", timeBuf);
+        LOG_I("\n[NTP] OK: %s WIB\n", timeBuf);
     }
 
     _client.setBufferSize(MQTT_PAYLOAD_BUF_SIZE);
@@ -83,22 +84,22 @@ void MqttClient::loop() {
 
 // ── Single non-blocking reconnect attempt ─────────────────────────────────
 bool MqttClient::_attemptReconnect() {
-    Serial.print("[MQTT] Connect...");
+    LOG_I("[MQTT] Connect...");
     char statusTopic[MQTT_TOPIC_BUF_SIZE];
     snprintf(statusTopic, sizeof(statusTopic), "cnc/%s/status", _clientId);
 
     // LWT: jika ESP32 disconnect paksa → broker kirim "offline"
     if (_client.connect(_clientId, nullptr, nullptr,
                         statusTopic, 0, true, "offline")) {
-        Serial.println(" OK");
+        LOG_I(" OK\n");
         _client.publish(statusTopic, "online", true);
         char cmdTopic[MQTT_TOPIC_BUF_SIZE];
         snprintf(cmdTopic, sizeof(cmdTopic), "cnc/%s/command", _clientId);
         _client.subscribe(cmdTopic);
         return true;
     } else {
-        Serial.printf(" GAGAL rc=%d (retry %lus)\n",
-                      _client.state(), MQTT_RECONNECT_INTERVAL / 1000);
+        LOG_W(" GAGAL rc=%d (retry %lus)\n",
+              _client.state(), MQTT_RECONNECT_INTERVAL / 1000);
         return false;
     }
 }
@@ -115,7 +116,7 @@ bool MqttClient::publish(const MqttPayload& p) {
         ts = (uint32_t)time(nullptr);
     } else {
         ts = millis() / 1000;   // detik sejak boot (bukan waktu nyata)
-        Serial.println("[NTP] Belum sync — pakai uptime detik sebagai timestamp");
+        LOG_W("[NTP] Belum sync — pakai uptime detik sebagai timestamp\n");
     }
 
     pos += snprintf(buf + pos, sizeof(buf) - pos,
@@ -144,10 +145,10 @@ bool MqttClient::publish(const MqttPayload& p) {
 
     bool ok = _client.publish(topic, buf);
     if (ok) {
-        Serial.printf("[MQTT] publish OK — %d bytes  ts=%u\n", pos, ts);
+        LOG_D("[MQTT] publish OK — %d bytes  ts=%u\n", pos, ts);
     } else {
-        Serial.printf("[MQTT] ✗ publish GAGAL! (payload=%d, bufSize=%d)\n",
-                      pos, _client.getBufferSize());
+        LOG_W("[MQTT] ✗ publish GAGAL! (payload=%d, bufSize=%d)\n",
+              pos, _client.getBufferSize());
     }
     return ok;
 }

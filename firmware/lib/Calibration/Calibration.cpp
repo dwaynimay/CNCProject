@@ -1,4 +1,5 @@
 #include "Calibration.h"
+#include "Logger.h"
 
 Calibration::Calibration() { reset(); }
 
@@ -29,7 +30,7 @@ void Calibration::save() {
         _prefs.putBool(  ("offDone" + String(i)).c_str(), _cal[i].offsetDone);
     }
     _prefs.end();
-    Serial.println(">> Kalibrasi tersimpan");
+    LOG_I(">> Kalibrasi tersimpan\n");
 }
 
 void Calibration::load() {
@@ -43,5 +44,5 @@ void Calibration::load() {
         }
     }
     _prefs.end();
-    Serial.println(">> Kalibrasi diload dari NVS");
+    LOG_I(">> Kalibrasi diload dari NVS\n");
 }

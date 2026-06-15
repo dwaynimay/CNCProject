@@ -1,6 +1,7 @@
 #include "EventLogBuffer.h"
 #ifndef UNIT_TEST
 #include "EventLog.h"
+#include "Logger.h"
 
 static const char* NVS_NS = "cnc_ev";
 
@@ -35,7 +36,7 @@ void EventLog::load() {
     if (_count > EVENT_LOG_SIZE) _count = 0;  // corrupt NVS — reset
     for (uint8_t slot = 0; slot < EVENT_LOG_SIZE; slot++) _readSlot(_prefs, slot);
     _prefs.end();
-    Serial.printf(">> EventLog: %d entri dimuat dari NVS\n", _count);
+    LOG_I(">> EventLog: %d entri dimuat dari NVS\n", _count);
 }
 
 void EventLog::save() {
@@ -58,15 +59,15 @@ void EventLog::addAndSave(const EventEntry& e) {
 
 void EventLog::print() const {
     if (_count == 0) {
-        Serial.println(">> Trip log kosong");
+        LOG_I(">> Trip log kosong\n");
         return;
     }
-    Serial.printf(">> Trip log (%d entri, terbaru lebih dulu):\n", _count);
+    LOG_I(">> Trip log (%d entri, terbaru lebih dulu):\n", _count);
     static const char* typeStr[]  = {"CURRENT", "TEMP"};
     static const char* alarmStr[] = {"OVERCURRENT", "OVERTEMP", "SENSOR_DISC"};
     for (uint8_t i = 0; i < _count; i++) {
         const EventEntry& e = get(i);
-        Serial.printf("  [%d] ts=%lu  %-7s sensor[%d]  %.2f  %s\n",
+        LOG_I("  [%d] ts=%lu  %-7s sensor[%d]  %.2f  %s\n",
             i,
             (unsigned long)e.timestamp,
             typeStr[(uint8_t)e.sensorType],
