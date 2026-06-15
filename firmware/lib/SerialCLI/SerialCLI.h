@@ -16,9 +16,11 @@ private:
     uint8_t      _n;
     uint8_t      _active;
     EventLog&    _log;
-    void handleChar(char c);
-    void doOffset();
+    bool         _showLive;
+    String       _cmdBuf;
+
+    void handleCommand(String cmd);
+    void doOffset(int idx);
     void printStatus();
     void printHelp();
-    void selectSensor();
 };

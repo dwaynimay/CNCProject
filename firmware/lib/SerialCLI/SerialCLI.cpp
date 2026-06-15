@@ -1,35 +1,88 @@
 #include "SerialCLI.h"
+#include "SensorConfig.h"
 
 SerialCLI::SerialCLI(Calibration& cal, ACS712* sensors, uint8_t n, EventLog& log)
-    : _cal(cal), _sensors(sensors), _n(n), _active(0), _log(log) {}
+    : _cal(cal), _sensors(sensors), _n(n), _active(0), _log(log), _showLive(false) {
+    _cmdBuf.reserve(32);
+}
 
 void SerialCLI::begin()  { printHelp(); }
-void SerialCLI::loop()   { if (Serial.available()) handleChar(Serial.read()); }
 
-void SerialCLI::handleChar(char c) {
-    switch (c) {
-        case 'c': doOffset();     break;
-        case 'z': printStatus();  break;
-        case 'p': selectSensor(); break;
-        case 's': _cal.save();    break;
-        case 'l': _cal.load();    break;
-        case 'r': _cal.reset();   Serial.println(">> Reset default"); break;
-        case 'e': _log.print();   break;
-        case '?': printHelp();    break;
+void SerialCLI::loop() {
+    while (Serial.available()) {
+        char c = Serial.read();
+        if (c == '\n' || c == '\r') {
+            if (_cmdBuf.length() > 0) {
+                handleCommand(_cmdBuf);
+                _cmdBuf = "";
+            }
+        } else {
+            _cmdBuf += c;
+        }
     }
 }
 
-void SerialCLI::doOffset() {
-    Serial.printf("\n>> Offset [%d] %s — mesin MATI, tekan Enter\n",
-        _active, CURRENT_NAMES[_active]);
-    while (!Serial.available()) delay(100);
-    Serial.read();
-    _cal.autoOffset(_sensors[_active]);
-    Serial.printf("   vMid = %.3f mV  — ketik 's' untuk simpan\n",
-        _cal.getData(_active).vMid);
+void SerialCLI::handleCommand(String cmd) {
+    cmd.trim();
+    if (cmd.length() == 0) return;
+
+    char action = cmd.charAt(0);
+    int arg = -1;
+    
+    // Ambil angka argumen jika ada (misal "c 1" -> arg=1)
+    if (cmd.length() > 1) {
+        arg = cmd.substring(1).toInt();
+    }
+
+    switch (action) {
+        case 'c': 
+            if (arg >= 0 && arg < _n) _active = arg;
+            doOffset(_active);
+            break;
+        case 'z': 
+            printStatus();  
+            break;
+        case 'p': 
+            if (arg >= 0 && arg < _n) {
+                _active = arg;
+                Serial.printf(">> Aktif: [%d] %s\n", _active, CURRENT_NAMES[_active]);
+            } else {
+                Serial.println(">> Pilih sensor dengan format: p <angka>");
+                for (int i = 0; i < _n; i++)
+                    Serial.printf("   %d: %s\n", i, CURRENT_NAMES[i]);
+            }
+            break;
+        case 's': 
+            _cal.save();    
+            break;
+        case 'l': 
+            _cal.load();    
+            break;
+        case 'r': 
+            _cal.reset();   
+            Serial.println(">> Reset default"); 
+            break;
+        case 'e': 
+            _log.print();   
+            break;
+        case 'v':
+            _showLive = !_showLive;
+            Serial.println(_showLive ? ">> Live Data ON" : ">> Live Data OFF");
+            break;
+        case '?': 
+            printHelp();    
+            break;
+        default:
+            Serial.println(">> Perintah tidak dikenal. Ketik ? untuk bantuan.");
+            break;
+    }
 }
 
-
+void SerialCLI::doOffset(int idx) {
+    Serial.printf("\n>> Mengkalibrasi Offset [%d] %s...\n", idx, CURRENT_NAMES[idx]);
+    _cal.autoOffset(_sensors[idx]);
+    Serial.printf("   vMid = %.3f mV  — ketik 's' untuk simpan\n", _cal.getData(idx).vMid);
+}
 
 void SerialCLI::printStatus() {
     Serial.println("\n>> KALIBRASI:");
@@ -42,28 +95,31 @@ void SerialCLI::printStatus() {
 }
 
 void SerialCLI::printHelp() {
-    Serial.println("-------------------------------------------");
-    Serial.println("c=offset  z=status  p=sensor  e=eventlog");
-    Serial.println("s=simpan  l=load   r=reset   ?=help");
-    Serial.println("-------------------------------------------");
-}
-
-void SerialCLI::selectSensor() {
-    Serial.println(">> Pilih sensor (0-4):");
-    for (int i = 0; i < _n; i++)
-        Serial.printf("   %d: %s\n", i, CURRENT_NAMES[i]);
-    unsigned long t = millis();
-    while (!Serial.available() && millis()-t < 5000);
-    if (Serial.available()) {
-        int idx = Serial.read() - '0';
-        if (idx >= 0 && idx < _n) {
-            _active = idx;
-            Serial.printf(">> Aktif: [%d] %s\n", _active, CURRENT_NAMES[_active]);
-        }
-    }
+    Serial.println("\n============== MENU BANTUAN CLI ==============");
+    Serial.println("Format penulisan perintah: <huruf> [angka]");
+    Serial.println("");
+    Serial.println("KALIBRASI SENSOR:");
+    Serial.println("  c <n> : Kalibrasi titik nol (offset) sensor ke-n.");
+    Serial.println("          Contoh: 'c 1' -> Kalibrasi Sensor 1.");
+    Serial.println("          (Pastikan mesin CNC DALAM KEADAAN MATI saat kalibrasi)");
+    Serial.println("  p <n> : Pilih sensor ke-n sebagai sensor aktif (fokus saat ini).");
+    Serial.println("          Contoh: 'p 1' -> Fokus ke Sensor 1.");
+    Serial.println("  z     : Tampilkan status & nilai kalibrasi semua sensor saat ini.");
+    Serial.println("");
+    Serial.println("PENYIMPANAN DATA:");
+    Serial.println("  s     : Simpan (Save) hasil kalibrasi ke memori internal (NVS).");
+    Serial.println("  l     : Muat ulang (Load) data kalibrasi terakhir dari memori.");
+    Serial.println("  r     : Hapus (Reset) semua data kalibrasi ke pengaturan pabrik.");
+    Serial.println("");
+    Serial.println("MONITORING & DIAGNOSTIK:");
+    Serial.println("  v     : Hidupkan/matikan (Toggle) tampilan data pembacaan sensor secara live.");
+    Serial.println("  e     : Tampilkan riwayat log error (Event Log) terbaru.");
+    Serial.println("  ?     : Tampilkan menu bantuan ini.");
+    Serial.println("==============================================");
 }
 
 void SerialCLI::printLive(const CurrentReading* r, uint8_t n) {
+    if (!_showLive) return;
     Serial.println("==========================================");
     for (int i = 0; i < n; i++)
         Serial.printf("[%d] %-14s %.4f A %s\n",
