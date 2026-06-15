@@ -1,7 +1,7 @@
 // Unit tests — EventLogBuffer ring buffer (pure C++, no hardware)
 // Run: pio test -e native
 #include <unity.h>
-#define UNIT_TEST
+// #define UNIT_TEST
 #include "EventLogBuffer.h"
 
 void setUp()    {}
