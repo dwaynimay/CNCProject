@@ -249,6 +249,10 @@ export default function App() {
               const val = frame.data.current?.[i]?.a;
               entry[`c${i}`] = val != null ? Math.abs(val) : null;
             });
+            TEMP_NAMES.forEach((_, i) => {
+              const val = frame.data.temp?.[i]?.c;
+              entry[`t${i}`] = val != null ? val : null;
+            });
             return [...prev.slice(-(HISTORY_LEN - 1)), entry];
           });
         } catch (_) {}
@@ -379,59 +383,117 @@ export default function App() {
         {/* ── TREN ARUS + SUHU + RELAY ── */}
         <section className="pane-chart-side">
 
-          {/* Trend chart */}
-          <div className="chart-card">
-            <div className="chart-header">
-              <span className="chart-title">Tren Arus</span>
-              <div className="chart-legend">
-                {CURRENT_NAMES.map((name, i) => (
-                  <div key={i} className="legend-item">
-                    <div className="legend-dot" style={{ background: CHART_COLORS[i] }} />
-                    {name}
-                  </div>
-                ))}
-              </div>
-            </div>
-            {history.length < 2 ? (
-              <div className="chart-empty">Menunggu data...</div>
-            ) : (
-              <ResponsiveContainer width="100%" height={180}>
-                <LineChart data={history} margin={{ top: 4, right: 4, bottom: 0, left: -16 }}>
-                  <XAxis dataKey="tick" hide />
-                  <YAxis
-                    domain={[0, 'auto']}
-                    tick={{ fontSize: 10, fill: '#7a7060' }}
-                    tickLine={false}
-                    axisLine={false}
-                  />
-                  <Tooltip
-                    contentStyle={{
-                      background: '#1a1510',
-                      border: '1px solid #2d2418',
-                      borderRadius: '6px',
-                      fontSize: 11,
-                      color: '#ede8df',
-                    }}
-                    cursor={{ stroke: '#2d2418', strokeWidth: 1 }}
-                    labelFormatter={() => ''}
-                    formatter={(v, name) => [v != null ? `${Number(v).toFixed(3)} A` : '—', name]}
-                  />
+          {/* Charts Column */}
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '14px', minWidth: 0 }}>
+            {/* Tren Arus */}
+            <div className="chart-card">
+              <div className="chart-header">
+                <span className="chart-title">Tren Arus</span>
+                <div className="chart-legend">
                   {CURRENT_NAMES.map((name, i) => (
-                    <Line
-                      key={i}
-                      type="monotone"
-                      dataKey={`c${i}`}
-                      name={name}
-                      stroke={CHART_COLORS[i]}
-                      strokeWidth={1.5}
-                      dot={false}
-                      connectNulls={false}
-                      isAnimationActive={false}
-                    />
+                    <div key={i} className="legend-item">
+                      <div className="legend-dot" style={{ background: CHART_COLORS[i] }} />
+                      {name}
+                    </div>
                   ))}
-                </LineChart>
-              </ResponsiveContainer>
-            )}
+                </div>
+              </div>
+              {history.length < 2 ? (
+                <div className="chart-empty">Menunggu data...</div>
+              ) : (
+                <ResponsiveContainer width="100%" height={180}>
+                  <LineChart data={history} margin={{ top: 4, right: 4, bottom: 0, left: -16 }}>
+                    <XAxis dataKey="tick" hide />
+                    <YAxis
+                      domain={[0, 'auto']}
+                      tick={{ fontSize: 10, fill: '#7a7060' }}
+                      tickLine={false}
+                      axisLine={false}
+                    />
+                    <Tooltip
+                      contentStyle={{
+                        background: '#1a1510',
+                        border: '1px solid #2d2418',
+                        borderRadius: '6px',
+                        fontSize: 11,
+                        color: '#ede8df',
+                      }}
+                      cursor={{ stroke: '#2d2418', strokeWidth: 1 }}
+                      labelFormatter={() => ''}
+                      formatter={(v, name) => [v != null ? `${Number(v).toFixed(3)} A` : '—', name]}
+                    />
+                    {CURRENT_NAMES.map((name, i) => (
+                      <Line
+                        key={i}
+                        type="monotone"
+                        dataKey={`c${i}`}
+                        name={name}
+                        stroke={CHART_COLORS[i]}
+                        strokeWidth={1.5}
+                        dot={false}
+                        connectNulls={false}
+                        isAnimationActive={false}
+                      />
+                    ))}
+                  </LineChart>
+                </ResponsiveContainer>
+              )}
+            </div>
+
+            {/* Tren Suhu */}
+            <div className="chart-card">
+              <div className="chart-header">
+                <span className="chart-title">Tren Suhu</span>
+                <div className="chart-legend">
+                  {TEMP_NAMES.map((name, i) => (
+                    <div key={i} className="legend-item">
+                      <div className="legend-dot" style={{ background: CHART_COLORS[i] }} />
+                      {name}
+                    </div>
+                  ))}
+                </div>
+              </div>
+              {history.length < 2 ? (
+                <div className="chart-empty">Menunggu data...</div>
+              ) : (
+                <ResponsiveContainer width="100%" height={180}>
+                  <LineChart data={history} margin={{ top: 4, right: 4, bottom: 0, left: -16 }}>
+                    <XAxis dataKey="tick" hide />
+                    <YAxis
+                      domain={['auto', 'auto']}
+                      tick={{ fontSize: 10, fill: '#7a7060' }}
+                      tickLine={false}
+                      axisLine={false}
+                    />
+                    <Tooltip
+                      contentStyle={{
+                        background: '#1a1510',
+                        border: '1px solid #2d2418',
+                        borderRadius: '6px',
+                        fontSize: 11,
+                        color: '#ede8df',
+                      }}
+                      cursor={{ stroke: '#2d2418', strokeWidth: 1 }}
+                      labelFormatter={() => ''}
+                      formatter={(v, name) => [v != null ? `${Number(v).toFixed(1)} °C` : '—', name]}
+                    />
+                    {TEMP_NAMES.map((name, i) => (
+                      <Line
+                        key={i}
+                        type="monotone"
+                        dataKey={`t${i}`}
+                        name={name}
+                        stroke={CHART_COLORS[i]}
+                        strokeWidth={1.5}
+                        dot={false}
+                        connectNulls={false}
+                        isAnimationActive={false}
+                      />
+                    ))}
+                  </LineChart>
+                </ResponsiveContainer>
+              )}
+            </div>
           </div>
 
           {/* Right: temp sensors + relay */}
