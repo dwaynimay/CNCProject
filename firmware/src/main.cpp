@@ -40,6 +40,12 @@ unsigned long lastPublish        = 0;
 unsigned long lastPublishSuccess = 0;  // [SPRINT-2] untuk fail-safe heartbeat
 bool          safeModeLatch      = false;  // latch: relay tidak bisa ON lagi setelah safe mode
 
+// EMA display filter — alpha 0.3: smooth tapi cukup responsif untuk NEMA 23
+// Alarm dicek dari raw, EMA hanya untuk nilai yang dikirim ke dashboard
+constexpr float EMA_ALPHA = 0.3f;
+float emaAmpere[NUM_CURRENT_SENSORS] = {};
+bool  emaInit[NUM_CURRENT_SENSORS]   = {};
+
 // ── [TEST] Simulasi overcurrent dari dashboard ────────────────────────────
 bool testOvercurrentActive = false;   // flag: inject arus palsu pada siklus berikutnya
 int  testOvercurrentSensor = 0;       // index sensor yang di-test (0–4)
@@ -214,7 +220,15 @@ void loop() {
               payload.current[si].ampere, si, CURRENT_NAMES[si], CURRENT_ALARM[si]);
     }
 
-    checkAlarms(payload);     // cek alarm SEBELUM publish
+    checkAlarms(payload);   // alarm dicek dari nilai raw
+
+    // Terapkan EMA setelah alarm check — hanya untuk nilai tampilan dashboard
+    for (int i = 0; i < NUM_CURRENT_SENSORS; i++) {
+        float raw     = payload.current[i].ampere;
+        emaAmpere[i]  = emaInit[i] ? EMA_ALPHA * raw + (1.0f - EMA_ALPHA) * emaAmpere[i] : raw;
+        emaInit[i]    = true;
+        payload.current[i].ampere = emaAmpere[i];
+    }     // cek alarm SEBELUM publish
     payload.relayOn = relay.isOn();
 
     // [SPRINT-2] Track publish sukses untuk heartbeat fail-safe

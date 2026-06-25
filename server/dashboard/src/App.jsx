@@ -51,7 +51,7 @@ function CurrentCard({ sensor, name, limit, onCal }) {
     <div className={`card ${cls}`}>
       <div className="card-label">{name}</div>
       <div className="card-value" style={{ color: valColor }}>
-        {nc ? '—' : fmt(Math.abs(a), 4)}
+        {nc ? '—' : fmt(a, 4)}
         <span className="card-unit">A</span>
       </div>
       <div className="bar-track">
@@ -247,7 +247,7 @@ export default function App() {
             const entry = { tick: prev.length };
             CURRENT_NAMES.forEach((_, i) => {
               const val = frame.data.current?.[i]?.a;
-              entry[`c${i}`] = val != null ? Math.abs(val) : null;
+              entry[`c${i}`] = val != null ? val : null;
             });
             TEMP_NAMES.forEach((_, i) => {
               const val = frame.data.temp?.[i]?.c;

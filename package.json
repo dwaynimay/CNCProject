@@ -3,6 +3,9 @@
   "version": "1.0.0",
   "private": true,
   "scripts": {
+    "install:backend": "cd server/backend && npm install",
+    "install:dashboard": "cd server/dashboard && npm install",
+    "install:all": "npm install && npm run install:backend && npm run install:dashboard",
     "start": "concurrently --names \"BACKEND,DASHBOARD\" --prefix-colors \"cyan,magenta\" \"npm run start:backend\" \"npm run start:dashboard\"",
     "start:backend": "cd server/backend && node index.js",
     "start:dashboard": "cd server/dashboard && npm run dev"
