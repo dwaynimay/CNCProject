@@ -40,6 +40,9 @@ unsigned long lastPublish        = 0;
 unsigned long lastPublishSuccess = 0;  // [SPRINT-2] untuk fail-safe heartbeat
 bool          safeModeLatch      = false;  // latch: relay tidak bisa ON lagi setelah safe mode
 
+MqttPayload   latestPayload;
+bool          hasLatestPayload   = false;
+
 // EMA display filter — alpha 0.3: smooth tapi cukup responsif untuk NEMA 23
 // Alarm dicek dari raw, EMA hanya untuk nilai yang dikirim ke dashboard
 constexpr float EMA_ALPHA = 0.3f;
@@ -133,7 +136,29 @@ void onCommand(const char* topic, const char* payload) {
     }
 
     if (strstr(payload, "relay_on"))  { relay.on();  return; }  // matikan mesin
-    if (strstr(payload, "relay_off")) { relay.off(); return; }  // hidupkan mesin (resume)
+    if (strstr(payload, "relay_off")) {
+        // [HYSTERESIS] Tolak resume jika sensor masih di zona bahaya
+        if (hasLatestPayload) {
+            for (int i = 0; i < NUM_TEMP_SENSORS; i++) {
+                if (latestPayload.temp[i].celsius > (TEMP_ALARM[i] - TEMP_HYSTERESIS)) {
+                    LOG_W("[SAFE] Tolak resume! Suhu %s masih %.1fC (Aman: <=%.1fC)\n",
+                          TEMP_NAMES[i], latestPayload.temp[i].celsius, TEMP_ALARM[i] - TEMP_HYSTERESIS);
+                    return;
+                }
+            }
+            for (int i = 0; i < NUM_CURRENT_SENSORS; i++) {
+                float currentVal = abs(latestPayload.current[i].ampere);
+                if (currentVal > (CURRENT_ALARM[i] - CURRENT_HYSTERESIS)) {
+                    LOG_W("[SAFE] Tolak resume! Arus %s masih %.2fA (Aman: <=%.2fA)\n",
+                          CURRENT_NAMES[i], currentVal, CURRENT_ALARM[i] - CURRENT_HYSTERESIS);
+                    return;
+                }
+            }
+        }
+        relay.off();
+        LOG_I("[SAFE] Resume mesin berhasil.\n");
+        return;
+    }
     if (strstr(payload, "cal_save"))  { cal.save();  return; }
     if (strstr(payload, "cal_reset")) { cal.reset(); LOG_I("> Reset default\n"); return; }
 
@@ -209,6 +234,9 @@ void loop() {
     delay(DS18B20_CONVERSION_MS);
     for (int i = 0; i < NUM_TEMP_SENSORS; i++)
         payload.temp[i] = tempSensors.read(i);
+
+    latestPayload = payload;
+    hasLatestPayload = true;
 
     // [TEST] Inject nilai arus palsu jika test_overcurrent aktif
     if (testOvercurrentActive) {

@@ -12,10 +12,12 @@ constexpr ACS712Type CURRENT_TYPES[5]  = {
     ACS712_20A, ACS712_20A, ACS712_20A, ACS712_20A, ACS712_30A
 };
 constexpr float CURRENT_ALARM[5]       = {3.0f, 3.0f, 3.0f, 2.0f, 8.0f};
+constexpr float CURRENT_HYSTERESIS     = 0.5f;   // Mesin baru bisa resume jika arus <= ALARM - HYSTERESIS
 
 constexpr int   ONEWIRE_PIN            = 4;
 constexpr const char* TEMP_NAMES[2]    = {"Spindle", "Stepper_Z"};
 constexpr float TEMP_ALARM[2]          = {60.0f, 55.0f};
+constexpr float TEMP_HYSTERESIS        = 5.0f;   // Mesin baru bisa resume jika suhu <= ALARM - HYSTERESIS
 
 constexpr int  RELAY_PIN               = 5;
 constexpr bool RELAY_ACTIVE_LOW        = true;
