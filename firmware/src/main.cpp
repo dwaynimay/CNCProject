@@ -58,6 +58,10 @@ bool  emaInit[NUM_CURRENT_SENSORS]   = {};
 bool testOvercurrentActive = false;   // flag: inject arus palsu pada siklus berikutnya
 int  testOvercurrentSensor = 0;       // index sensor yang di-test (0–4)
 
+// ── [TEST] Simulasi overtemp dari dashboard ───────────────────────────────
+bool testOvertempActive = false;      // flag: inject suhu palsu pada siklus berikutnya
+int  testOvertempSensor = 0;          // index sensor yang di-test (0–1)
+
 // ── [SELF-TEST] Diagnostik terstruktur — non-destruktif, aman dijalankan kapan saja ──
 // Pemeriksaan sanity/logika saja (tidak men-trip relay atau menulis EventLog asli).
 // Untuk uji trip relay sungguhan, tetap pakai command test_overcurrent yang sudah ada.
@@ -192,6 +196,20 @@ void onCommand(const char* topic, const char* payload) {
         testOvercurrentActive = true;
         LOG_D("[TEST] Simulasi overcurrent sensor[%d] %s — akan trip pada siklus berikutnya\n",
               idx, CURRENT_NAMES[idx]);
+        return;
+    }
+
+    // test_overtemp  atau  test_overtemp:<index>
+    // Simulasi suhu berlebih satu siklus → relay trip otomatis
+    static constexpr char CMD_TEST_OT[] = "test_overtemp";
+    if (strncmp(payload, CMD_TEST_OT, sizeof(CMD_TEST_OT) - 1) == 0) {
+        int idx = 0;
+        if (payload[sizeof(CMD_TEST_OT) - 1] == ':') idx = atoi(payload + sizeof(CMD_TEST_OT));
+        idx = constrain(idx, 0, (int)NUM_TEMP_SENSORS - 1);
+        testOvertempSensor = idx;
+        testOvertempActive = true;
+        LOG_D("[TEST] Simulasi overtemp sensor[%d] %s — akan trip pada siklus berikutnya\n",
+              idx, TEMP_NAMES[idx]);
         return;
     }
 
@@ -364,6 +382,16 @@ void loop() {
         testOvercurrentActive      = false;   // one-shot: reset setelah satu siklus
         LOG_D("[TEST] Inject arus %.2fA ke sensor[%d] %s (alarm threshold: %.2fA)\n",
               payload.current[si].ampere, si, CURRENT_NAMES[si], CURRENT_ALARM[si]);
+    }
+
+    // [TEST] Inject nilai suhu palsu jika test_overtemp aktif
+    if (testOvertempActive) {
+        int si = testOvertempSensor;
+        payload.temp[si].celsius = TEMP_ALARM[si] * 1.2f;  // 120% batas alarm
+        payload.temp[si].alarm   = true;
+        testOvertempActive       = false;   // one-shot: reset setelah satu siklus
+        LOG_D("[TEST] Inject suhu %.1fC ke sensor[%d] %s (alarm threshold: %.1fC)\n",
+              payload.temp[si].celsius, si, TEMP_NAMES[si], TEMP_ALARM[si]);
     }
 
     checkAlarms(payload);   // alarm dicek dari nilai raw
