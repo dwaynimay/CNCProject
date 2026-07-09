@@ -1,6 +1,6 @@
 const router  = require('express').Router();
 const mqttSvc = require('../services/mqttService');
-const { getHistory } = require('../db');
+const { getHistory, getSelfTestHistory } = require('../db');
 
 // GET  /api/latest/:id?  — data terbaru per device (live, dari memori)
 router.get('/latest/:id?', (req, res) => {
@@ -48,6 +48,22 @@ router.post('/calibrate/:id/reset', (req, res) => {
     const { id } = req.params;
     mqttSvc.sendCommand(id, 'cal_reset', 'dashboard');
     res.json({ ok: true, sent: 'cal_reset' });
+});
+
+// POST /api/selftest/:id — jalankan self-test diagnostik lengkap di device
+router.post('/selftest/:id', (req, res) => {
+    const { id } = req.params;
+    mqttSvc.sendCommand(id, 'self_test', 'dashboard');
+    res.json({ ok: true, sent: 'self_test' });
+});
+
+// GET  /api/selftest/:id — histori hasil self-test dari database
+// Query: ?limit=20
+router.get('/selftest/:id', (req, res) => {
+    const { id }  = req.params;
+    const limit   = Math.min(parseInt(req.query.limit) || 20, 200);
+    const rows    = getSelfTestHistory(id, limit);
+    res.json({ deviceId: id, count: rows.length, data: rows });
 });
 
 module.exports = router;

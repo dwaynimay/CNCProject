@@ -1,6 +1,6 @@
 const mqtt = require('mqtt');
 const cfg  = require('../config/mqtt');
-const { insertTelemetry, logCommand } = require('../db');
+const { insertTelemetry, logCommand, insertSelfTestResult } = require('../db');
 
 let client;
 let lastPayload = {};   // { deviceId: payload } — cache memori untuk akses cepat
@@ -15,9 +15,9 @@ function start(wss) {
 
     client.on('connect', () => {
         console.log(`[MQTT] ✓ Connected to ${cfg.host}:${cfg.port}`);
-        client.subscribe(cfg.topicSub, (err) => {
+        client.subscribe([cfg.topicSub, cfg.topicSelfTest], (err) => {
             if (err) console.error('[MQTT] Subscribe error:', err.message);
-            else     console.log(`[MQTT] Subscribed to: ${cfg.topicSub}`);
+            else     console.log(`[MQTT] Subscribed to: ${cfg.topicSub}, ${cfg.topicSelfTest}`);
         });
     });
 
@@ -31,6 +31,23 @@ function start(wss) {
         console.log(`[MQTT] ← msg from ${deviceId} (${message.length} bytes)`);
         try {
             const data = JSON.parse(message.toString());
+
+            if (topic.endsWith('/selftest_result')) {
+                // ── Simpan hasil self-test ke database SQLite ──────────────
+                try {
+                    insertSelfTestResult(deviceId, data);
+                } catch (dbErr) {
+                    console.error('[DB] Gagal simpan hasil self-test:', dbErr.message);
+                }
+
+                // ── Forward ke semua dashboard via WebSocket ───────────────
+                const frame = JSON.stringify({ type: 'selftest_result', deviceId, data });
+                let sent = 0;
+                wss.clients.forEach(ws => { if (ws.readyState === 1) { ws.send(frame); sent++; } });
+                console.log(`[WS]   → Forwarded selftest_result to ${sent} dashboard client(s)`);
+                return;
+            }
+
             lastPayload[deviceId] = { deviceId, ...data };
 
             // ── Simpan ke database SQLite ──────────────────────────────────

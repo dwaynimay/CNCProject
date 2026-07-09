@@ -38,6 +38,16 @@ db.exec(`
     sent_by    TEXT DEFAULT 'dashboard',
     sent_at    DATETIME DEFAULT (datetime('now', 'localtime'))
   );
+
+  CREATE TABLE IF NOT EXISTS selftest_results (
+    id          INTEGER PRIMARY KEY AUTOINCREMENT,
+    device_id   TEXT NOT NULL,
+    overall     TEXT NOT NULL,
+    checks      TEXT NOT NULL,
+    recorded_at DATETIME DEFAULT (datetime('now', 'localtime'))
+  );
+
+  CREATE INDEX IF NOT EXISTS idx_selftest_device ON selftest_results(device_id);
 `);
 
 console.log(`[DB] ✓ SQLite terhubung: ${DB_PATH}`);
@@ -73,9 +83,33 @@ function logCommand(deviceId, command, sentBy = 'dashboard') {
     return stmtLogCmd.run(deviceId, command, sentBy);
 }
 
+/** Simpan satu hasil self-test (payload = { ts, overall, checks: [...] }) */
+const stmtInsertSelfTest = db.prepare(
+    'INSERT INTO selftest_results (device_id, overall, checks) VALUES (?, ?, ?)'
+);
+function insertSelfTestResult(deviceId, payload) {
+    return stmtInsertSelfTest.run(deviceId, payload.overall, JSON.stringify(payload.checks || []));
+}
+
+/** Ambil histori hasil self-test terbaru (default 20 baris) */
+const stmtGetSelfTestHistory = db.prepare(
+    'SELECT id, device_id, overall, checks, recorded_at FROM selftest_results WHERE device_id = ? ORDER BY recorded_at DESC LIMIT ?'
+);
+function getSelfTestHistory(deviceId, limit = 20) {
+    return stmtGetSelfTestHistory.all(deviceId, limit).map(row => ({
+        id:         row.id,
+        deviceId:   row.device_id,
+        overall:    row.overall,
+        checks:     JSON.parse(row.checks),
+        recordedAt: row.recorded_at,
+    }));
+}
+
 module.exports = {
     db,
     insertTelemetry,
     getHistory,
     logCommand,
+    insertSelfTestResult,
+    getSelfTestHistory,
 };
