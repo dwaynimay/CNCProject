@@ -129,49 +129,104 @@ function RelayCard({ relayOn, disabled, onOn, onOff }) {
 }
 
 // ── App ───────────────────────────────────────────────────────────────
-// ── TestPanel ─────────────────────────────────────────────────────────────
-function TestPanel({ connected, data, onTest, testResult, testSensor, onSensorChange }) {
+// ── SelfTestPanel ─────────────────────────────────────────────────────────
+const CATEGORY_LABELS = {
+  connectivity: 'Konektivitas',
+  current:      'Sensor Arus',
+  temp:         'Sensor Suhu',
+  relay:        'Relay',
+  calibration:  'Kalibrasi',
+  eventlog:     'Event Log',
+};
+
+function SelfTestPanel({
+  connected, data, onRunSelfTest, selfTestRunning, selfTestResults,
+  onTripTest, tripTestResult, tripTestSensor, onTripSensorChange,
+}) {
+  const checks = selfTestResults?.checks ?? [];
+  const grouped = checks.reduce((acc, c) => {
+    (acc[c.category] ??= []).push(c);
+    return acc;
+  }, {});
+  const passCount = checks.filter(c => c.pass).length;
+
   return (
     <div className="test-panel">
       <div className="test-panel-header">
         <span className="test-icon">🔬</span>
-        <span className="test-title">Test Proteksi Arus Lebih</span>
-        {testResult === 'pass' && (
-          <span className="test-badge pass">✅ Relay Trip Berhasil</span>
-        )}
-        {testResult === 'fail' && (
-          <span className="test-badge fail">❌ Test Gagal</span>
-        )}
-        {testResult === 'running' && (
-          <span className="test-badge running">⏳ Menunggu respons...</span>
+        <span className="test-title">System Self-Test</span>
+        {selfTestRunning && <span className="test-badge running">⏳ Menjalankan diagnostik...</span>}
+        {!selfTestRunning && selfTestResults && (
+          <span className={`test-badge ${selfTestResults.overall === 'pass' ? 'pass' : 'fail'}`}>
+            {selfTestResults.overall === 'pass' ? '✅' : '❌'} {passCount}/{checks.length} check lulus
+          </span>
         )}
       </div>
       <div className="test-body">
         <div className="test-desc">
-          Trigger simulasi arus berlebih ke firmware. ESP32 akan inject nilai arus melebihi batas alarm,
-          relay akan trip (mesin mati), dan hasilnya muncul di dashboard.
+          Jalankan diagnostik lengkap di device: sensor arus &amp; suhu (sanity + logika respons alarm),
+          aktuasi relay, kalibrasi NVS, event log, dan konektivitas MQTT/NTP. Hasil per-item ditampilkan
+          di bawah dan tersimpan sebagai riwayat.
         </div>
         <div className="test-controls">
-          <select
-            id="test-sensor-select"
-            className="test-select"
-            value={testSensor}
-            onChange={e => onSensorChange(Number(e.target.value))}
-            disabled={testResult === 'running'}
-          >
-            {CURRENT_NAMES.map((n, i) => (
-              <option key={i} value={i}>{n} — batas {CURRENT_LIMITS[i]} A</option>
-            ))}
-          </select>
           <button
-            id="btn-test-overcurrent"
-            className={`btn btn-test${testResult === 'running' ? ' running' : ''}`}
-            disabled={!connected || !data || testResult === 'running'}
-            onClick={() => onTest(testSensor)}
+            id="btn-run-selftest"
+            className={`btn btn-test${selfTestRunning ? ' running' : ''}`}
+            disabled={!connected || !data || selfTestRunning}
+            onClick={onRunSelfTest}
           >
-            {testResult === 'running' ? '⏳ Menguji...' : '▶ Jalankan Test'}
+            {selfTestRunning ? '⏳ Menguji...' : '▶ Jalankan Self-Test'}
           </button>
         </div>
+
+        {checks.length > 0 && (
+          <div className="selftest-results">
+            {Object.entries(grouped).map(([category, items]) => (
+              <div key={category} className="selftest-category">
+                <div className="selftest-category-label">{CATEGORY_LABELS[category] || category}</div>
+                {items.map((c, i) => (
+                  <div key={i} className={`selftest-item ${c.pass ? 'pass' : 'fail'}`}>
+                    <span className="selftest-icon">{c.pass ? '✅' : '❌'}</span>
+                    <span className="selftest-name">{c.name}</span>
+                    <span className="selftest-detail">{c.detail}</span>
+                  </div>
+                ))}
+              </div>
+            ))}
+          </div>
+        )}
+
+        <details className="selftest-advanced">
+          <summary>Trip Test Manual (1 sensor)</summary>
+          <div className="test-desc">
+            Trigger simulasi arus berlebih ke satu sensor — relay akan benar-benar trip (mesin mati).
+            Berbeda dari Self-Test di atas (yang non-destruktif), ini sengaja mematikan mesin untuk
+            memverifikasi proteksi overcurrent end-to-end.
+          </div>
+          <div className="test-controls">
+            <select
+              id="test-sensor-select"
+              className="test-select"
+              value={tripTestSensor}
+              onChange={e => onTripSensorChange(Number(e.target.value))}
+              disabled={tripTestResult === 'running'}
+            >
+              {CURRENT_NAMES.map((n, i) => (
+                <option key={i} value={i}>{n} — batas {CURRENT_LIMITS[i]} A</option>
+              ))}
+            </select>
+            <button
+              id="btn-test-overcurrent"
+              className={`btn btn-test${tripTestResult === 'running' ? ' running' : ''}`}
+              disabled={!connected || !data || tripTestResult === 'running'}
+              onClick={() => onTripTest(tripTestSensor)}
+            >
+              {tripTestResult === 'running' ? '⏳ Menguji...' : '▶ Jalankan Trip Test'}
+            </button>
+            {tripTestResult === 'pass' && <span className="test-badge pass">✅ Relay Trip Berhasil</span>}
+            {tripTestResult === 'fail' && <span className="test-badge fail">❌ Test Gagal</span>}
+          </div>
+        </details>
       </div>
     </div>
   );
@@ -187,9 +242,12 @@ export default function App() {
   const [logOpen,      setLogOpen]      = useState(false);
   const [lastTs,       setLastTs]       = useState(null);
   const [theme,        setTheme]        = useState(() => localStorage.getItem('theme') || 'dark');
-  const [testResult,   setTestResult]   = useState(null);  // null | 'running' | 'pass' | 'fail'
-  const [testSensor,   setTestSensor]   = useState(0);     // index sensor yang di-test
+  const [testResult,   setTestResult]   = useState(null);  // null | 'running' | 'pass' | 'fail' (trip test manual)
+  const [testSensor,   setTestSensor]   = useState(0);     // index sensor yang di-test (trip test manual)
+  const [selfTestRunning, setSelfTestRunning] = useState(false);
+  const [selfTestResults, setSelfTestResults] = useState(null); // { ts, overall, checks: [] }
   const testResultRef  = useRef(null);  // mirror testResult untuk akses di ws.onmessage
+  const selfTestRunningRef = useRef(false);
   const relayPendingRef = useRef(false); // true = abaikan relayOn dari telemetri (anti-blink)
   const logRef = useRef(null);
   const wsRef  = useRef(null);
@@ -222,7 +280,22 @@ export default function App() {
       ws.onmessage = (e) => {
         try {
           const frame = JSON.parse(e.data);
-          if (frame.type !== 'telemetry' || frame.deviceId !== DEVICE_ID) return;
+          if (frame.deviceId !== DEVICE_ID) return;
+
+          if (frame.type === 'selftest_result') {
+            setSelfTestResults(frame.data);
+            setSelfTestRunning(false);
+            selfTestRunningRef.current = false;
+            const passCount = frame.data.checks?.filter(c => c.pass).length ?? 0;
+            const total     = frame.data.checks?.length ?? 0;
+            addLog(
+              `[SELF-TEST] ${frame.data.overall === 'pass' ? '✅' : '❌'} Selesai: ${passCount}/${total} check lulus`,
+              frame.data.overall === 'pass' ? 'ok' : 'error'
+            );
+            return;
+          }
+
+          if (frame.type !== 'telemetry') return;
 
           setData(frame.data);
           setLastTs(nowTs());
@@ -305,6 +378,27 @@ export default function App() {
         addLog('[TEST] ✗ Timeout — tidak ada respons alarm dari firmware.', 'error');
       }
     }, 10000);
+  }
+
+  async function doRunSelfTest() {
+    setSelfTestRunning(true);
+    selfTestRunningRef.current = true;
+    addLog('[SELF-TEST] Menjalankan diagnostik lengkap...', 'send');
+    const r = await post(`${API}/selftest/${DEVICE_ID}`, {});
+    if (!r.ok) {
+      addLog(`[SELF-TEST] Gagal kirim: ${r.error}`, 'error');
+      setSelfTestRunning(false);
+      selfTestRunningRef.current = false;
+      return;
+    }
+    // Auto-timeout 15 detik jika tidak ada respons (self-test lebih lama dari trip test biasa)
+    setTimeout(() => {
+      if (selfTestRunningRef.current) {
+        setSelfTestRunning(false);
+        selfTestRunningRef.current = false;
+        addLog('[SELF-TEST] ✗ Timeout — tidak ada respons dari firmware.', 'error');
+      }
+    }, 15000);
   }
 
   async function doOffset(idx) {
@@ -511,15 +605,18 @@ export default function App() {
         </section>
 
 
-        {/* ── TEST PROTEKSI ── */}
+        {/* ── SELF-TEST SISTEM ── */}
         <section>
-          <TestPanel
+          <SelfTestPanel
             connected={connected}
             data={data}
-            onTest={doTestOvercurrent}
-            testResult={testResult}
-            testSensor={testSensor}
-            onSensorChange={setTestSensor}
+            onRunSelfTest={doRunSelfTest}
+            selfTestRunning={selfTestRunning}
+            selfTestResults={selfTestResults}
+            onTripTest={doTestOvercurrent}
+            tripTestResult={testResult}
+            tripTestSensor={testSensor}
+            onTripSensorChange={setTestSensor}
           />
         </section>
 
