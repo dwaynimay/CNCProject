@@ -9,7 +9,7 @@ const API            = import.meta.env.VITE_API_URL || `http://${hostname}:3001/
 const WS_URL         = import.meta.env.VITE_WS_URL  || `ws://${hostname}:3002`;
 
 const CURRENT_NAMES  = ['Stepper X', 'Stepper Y1', 'Stepper Y2', 'Stepper Z', 'Spindle'];
-const CURRENT_LIMITS = [3.0, 3.0, 3.0, 2.0, 8.0];
+const CURRENT_LIMITS = [3.0, 3.0, 3.0, 2.0, 3.0];
 const TEMP_NAMES     = ['Spindle', 'Stepper Z'];
 const TEMP_LIMITS    = [60, 55];
 
@@ -142,6 +142,7 @@ const CATEGORY_LABELS = {
 function SelfTestPanel({
   connected, data, onRunSelfTest, selfTestRunning, selfTestResults,
   onTripTest, tripTestResult, tripTestSensor, onTripSensorChange,
+  onTripTempTest, tripTempResult, tripTempSensor, onTripTempSensorChange,
 }) {
   const checks = selfTestResults?.checks ?? [];
   const grouped = checks.reduce((acc, c) => {
@@ -180,28 +181,31 @@ function SelfTestPanel({
         </div>
 
         {checks.length > 0 && (
-          <div className="selftest-results">
-            {Object.entries(grouped).map(([category, items]) => (
-              <div key={category} className="selftest-category">
-                <div className="selftest-category-label">{CATEGORY_LABELS[category] || category}</div>
-                {items.map((c, i) => (
-                  <div key={i} className={`selftest-item ${c.pass ? 'pass' : 'fail'}`}>
-                    <span className="selftest-icon">{c.pass ? '✅' : '❌'}</span>
-                    <span className="selftest-name">{c.name}</span>
-                    <span className="selftest-detail">{c.detail}</span>
-                  </div>
-                ))}
-              </div>
-            ))}
-          </div>
+          <details className="selftest-advanced" open>
+            <summary>Hasil Self-Test ({passCount}/{checks.length} lulus)</summary>
+            <div className="selftest-results">
+              {Object.entries(grouped).map(([category, items]) => (
+                <div key={category} className="selftest-category">
+                  <div className="selftest-category-label">{CATEGORY_LABELS[category] || category}</div>
+                  {items.map((c, i) => (
+                    <div key={i} className={`selftest-item ${c.pass ? 'pass' : 'fail'}`}>
+                      <span className="selftest-icon">{c.pass ? '✅' : '❌'}</span>
+                      <span className="selftest-name">{c.name}</span>
+                      <span className="selftest-detail">{c.detail}</span>
+                    </div>
+                  ))}
+                </div>
+              ))}
+            </div>
+          </details>
         )}
 
         <details className="selftest-advanced">
           <summary>Trip Test Manual (1 sensor)</summary>
           <div className="test-desc">
-            Trigger simulasi arus berlebih ke satu sensor — relay akan benar-benar trip (mesin mati).
+            Trigger simulasi arus/suhu berlebih ke satu sensor — relay akan benar-benar trip (mesin mati).
             Berbeda dari Self-Test di atas (yang non-destruktif), ini sengaja mematikan mesin untuk
-            memverifikasi proteksi overcurrent end-to-end.
+            memverifikasi proteksi overcurrent/overtemp end-to-end.
           </div>
           <div className="test-controls">
             <select
@@ -221,10 +225,33 @@ function SelfTestPanel({
               disabled={!connected || !data || tripTestResult === 'running'}
               onClick={() => onTripTest(tripTestSensor)}
             >
-              {tripTestResult === 'running' ? '⏳ Menguji...' : '▶ Jalankan Trip Test'}
+              {tripTestResult === 'running' ? '⏳ Menguji...' : '▶ Jalankan Trip Test Arus'}
             </button>
             {tripTestResult === 'pass' && <span className="test-badge pass">✅ Relay Trip Berhasil</span>}
             {tripTestResult === 'fail' && <span className="test-badge fail">❌ Test Gagal</span>}
+          </div>
+          <div className="test-controls" style={{ marginTop: 10 }}>
+            <select
+              id="test-temp-sensor-select"
+              className="test-select"
+              value={tripTempSensor}
+              onChange={e => onTripTempSensorChange(Number(e.target.value))}
+              disabled={tripTempResult === 'running'}
+            >
+              {TEMP_NAMES.map((n, i) => (
+                <option key={i} value={i}>{n} — batas {TEMP_LIMITS[i]}°C</option>
+              ))}
+            </select>
+            <button
+              id="btn-test-overtemp"
+              className={`btn btn-test${tripTempResult === 'running' ? ' running' : ''}`}
+              disabled={!connected || !data || tripTempResult === 'running'}
+              onClick={() => onTripTempTest(tripTempSensor)}
+            >
+              {tripTempResult === 'running' ? '⏳ Menguji...' : '▶ Jalankan Trip Test Suhu'}
+            </button>
+            {tripTempResult === 'pass' && <span className="test-badge pass">✅ Relay Trip Berhasil</span>}
+            {tripTempResult === 'fail' && <span className="test-badge fail">❌ Test Gagal</span>}
           </div>
         </details>
       </div>
@@ -242,11 +269,14 @@ export default function App() {
   const [logOpen,      setLogOpen]      = useState(false);
   const [lastTs,       setLastTs]       = useState(null);
   const [theme,        setTheme]        = useState(() => localStorage.getItem('theme') || 'dark');
-  const [testResult,   setTestResult]   = useState(null);  // null | 'running' | 'pass' | 'fail' (trip test manual)
-  const [testSensor,   setTestSensor]   = useState(0);     // index sensor yang di-test (trip test manual)
+  const [testResult,   setTestResult]   = useState(null);  // null | 'running' | 'pass' | 'fail' (trip test arus)
+  const [testSensor,   setTestSensor]   = useState(0);     // index sensor arus yang di-test (trip test manual)
+  const [testTempResult, setTestTempResult] = useState(null); // null | 'running' | 'pass' | 'fail' (trip test suhu)
+  const [testTempSensor, setTestTempSensor] = useState(0);    // index sensor suhu yang di-test (trip test manual)
   const [selfTestRunning, setSelfTestRunning] = useState(false);
   const [selfTestResults, setSelfTestResults] = useState(null); // { ts, overall, checks: [] }
   const testResultRef  = useRef(null);  // mirror testResult untuk akses di ws.onmessage
+  const testTempResultRef = useRef(null);  // mirror testTempResult untuk akses di ws.onmessage
   const selfTestRunningRef = useRef(false);
   const relayPendingRef = useRef(false); // true = abaikan relayOn dari telemetri (anti-blink)
   const logRef = useRef(null);
@@ -316,6 +346,16 @@ export default function App() {
             }
           }
 
+          // ── Deteksi hasil test overtemp via telemetri masuk ──
+          if (testTempResultRef.current === 'running') {
+            const anyAlarm = frame.data.temp?.some(s => s?.alarm);
+            if (anyAlarm && frame.data.relayOn) {
+              setTestTempResult('pass');
+              testTempResultRef.current = 'pass';
+              addLog('[TEST] ✓ BERHASIL — Relay berhasil trip! Suhu lebih terdeteksi.', 'ok');
+            }
+          }
+
           setHistory(prev => {
             const entry = { tick: prev.length };
             CURRENT_NAMES.forEach((_, i) => {
@@ -354,7 +394,10 @@ export default function App() {
     const r = await post(`${API}/command/${DEVICE_ID}`, { cmd });
     addLog(r.ok ? `Berhasil: ${r.sent}` : `Error: ${r.error}`, r.ok ? 'ok' : 'error');
     // Reset hasil test jika relay dihidupkan kembali
-    if (cmd === 'relay_off') { setTestResult(null); testResultRef.current = null; }
+    if (cmd === 'relay_off') {
+      setTestResult(null); testResultRef.current = null;
+      setTestTempResult(null); testTempResultRef.current = null;
+    }
   }
 
   async function doTestOvercurrent(sensorIdx) {
@@ -375,6 +418,29 @@ export default function App() {
       if (testResultRef.current === 'running') {
         setTestResult('fail');
         testResultRef.current = 'fail';
+        addLog('[TEST] ✗ Timeout — tidak ada respons alarm dari firmware.', 'error');
+      }
+    }, 10000);
+  }
+
+  async function doTestOvertemp(sensorIdx) {
+    setTestTempResult('running');
+    testTempResultRef.current = 'running';
+    addLog(`[TEST] Trigger overtemp sensor [${sensorIdx}] ${TEMP_NAMES[sensorIdx]}...`, 'send');
+    const cmd = sensorIdx === 0 ? 'test_overtemp' : `test_overtemp:${sensorIdx}`;
+    const r = await post(`${API}/command/${DEVICE_ID}`, { cmd });
+    if (!r.ok) {
+      addLog(`[TEST] Gagal kirim: ${r.error}`, 'error');
+      setTestTempResult('fail');
+      testTempResultRef.current = 'fail';
+      return;
+    }
+    addLog('[TEST] Perintah terkirim — menunggu respons firmware (~2 dtk)...', 'ok');
+    // Auto-timeout 10 detik jika tidak ada respons
+    setTimeout(() => {
+      if (testTempResultRef.current === 'running') {
+        setTestTempResult('fail');
+        testTempResultRef.current = 'fail';
         addLog('[TEST] ✗ Timeout — tidak ada respons alarm dari firmware.', 'error');
       }
     }, 10000);
@@ -617,6 +683,10 @@ export default function App() {
             tripTestResult={testResult}
             tripTestSensor={testSensor}
             onTripSensorChange={setTestSensor}
+            onTripTempTest={doTestOvertemp}
+            tripTempResult={testTempResult}
+            tripTempSensor={testTempSensor}
+            onTripTempSensorChange={setTestTempSensor}
           />
         </section>
 
