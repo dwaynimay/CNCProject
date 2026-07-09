@@ -8,6 +8,8 @@ SerialCLI::SerialCLI(Calibration& cal, ACS712* sensors, uint8_t n, EventLog& log
 
 void SerialCLI::begin()  { printHelp(); }
 
+void SerialCLI::setSelfTestCallback(SelfTestCallback cb) { _selfTestCb = cb; }
+
 void SerialCLI::loop() {
     while (Serial.available()) {
         char c = Serial.read();
@@ -69,6 +71,15 @@ void SerialCLI::handleCommand(String cmd) {
             _showLive = !_showLive;
             Serial.println(_showLive ? ">> Live Data ON" : ">> Live Data OFF");
             break;
+        case 't':
+            if (_selfTestCb) {
+                Serial.println(">> Menjalankan self-test...");
+                _selfTestCb();
+                Serial.println(">> Self-test selesai. Hasil dipublish ke MQTT (selftest_result).");
+            } else {
+                Serial.println(">> Self-test belum tersedia.");
+            }
+            break;
         case '?': 
             printHelp();    
             break;
@@ -114,6 +125,7 @@ void SerialCLI::printHelp() {
     Serial.println("MONITORING & DIAGNOSTIK:");
     Serial.println("  v     : Hidupkan/matikan (Toggle) tampilan data pembacaan sensor secara live.");
     Serial.println("  e     : Tampilkan riwayat log error (Event Log) terbaru.");
+    Serial.println("  t     : Jalankan self-test diagnostik lengkap (hasil dipublish ke MQTT).");
     Serial.println("  ?     : Tampilkan menu bantuan ini.");
     Serial.println("==============================================");
 }

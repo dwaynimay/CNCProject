@@ -1,5 +1,9 @@
 #pragma once
+#ifdef UNIT_TEST
+#include <stdint.h>
+#else
 #include <Arduino.h>
+#endif
 #include "types.h"
 
 // ── Edit file ini untuk sesuaikan dengan hardware ──────────
@@ -11,7 +15,7 @@ constexpr const char* CURRENT_NAMES[5] = {
 constexpr ACS712Type CURRENT_TYPES[5]  = {
     ACS712_20A, ACS712_20A, ACS712_20A, ACS712_20A, ACS712_20A
 };
-constexpr float CURRENT_ALARM[5]       = {3.0f, 3.0f, 3.0f, 2.0f, 8.0f};
+constexpr float CURRENT_ALARM[5]       = {3.0f, 3.0f, 3.0f, 2.0f, 3.0f};
 constexpr float CURRENT_HYSTERESIS     = 0.5f;   // Mesin baru bisa resume jika arus <= ALARM - HYSTERESIS
 
 constexpr int   ONEWIRE_PIN            = 4;

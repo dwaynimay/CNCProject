@@ -1,5 +1,9 @@
 #pragma once
+#ifdef UNIT_TEST
+#include <stdint.h>
+#else
 #include <Arduino.h>
+#endif
 
 enum ACS712Type { ACS712_20A, ACS712_30A };
 

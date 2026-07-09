@@ -2,9 +2,10 @@
 #include <time.h>        // [SPRINT-2] NTP timestamp
 #include "Logger.h"
 
-// Topic: cnc/<clientId>/telemetry  (ESP32 → broker)
-//        cnc/<clientId>/command    (broker → ESP32)
-//        cnc/<clientId>/status     (LWT: "online"/"offline")
+// Topic: cnc/<clientId>/telemetry      (ESP32 → broker)
+//        cnc/<clientId>/command        (broker → ESP32)
+//        cnc/<clientId>/status         (LWT: "online"/"offline")
+//        cnc/<clientId>/selftest_result (ESP32 → broker, hasil self-test)
 
 MqttClient* MqttClient::_instance = nullptr;
 
@@ -60,7 +61,7 @@ void MqttClient::begin(const char* ssid, const char* pass,
         LOG_I("\n[NTP] OK: %s WIB\n", timeBuf);
     }
 
-    _client.setBufferSize(MQTT_PAYLOAD_BUF_SIZE);
+    _client.setBufferSize(MQTT_SELFTEST_BUF_SIZE);  // cukup untuk payload terbesar (hasil self-test)
     _client.setServer(host, port);
     _client.setCallback(_onMessage);
 
@@ -148,6 +149,39 @@ bool MqttClient::publish(const MqttPayload& p) {
         LOG_D("[MQTT] publish OK — %d bytes  ts=%u\n", pos, ts);
     } else {
         LOG_W("[MQTT] ✗ publish GAGAL! (payload=%d, bufSize=%d)\n",
+              pos, _client.getBufferSize());
+    }
+    return ok;
+}
+
+// ── Publish hasil self-test terstruktur ──────────────────────────────────
+bool MqttClient::publishSelfTestResult(const SelfTestResult* results, uint8_t count) {
+    char buf[MQTT_SELFTEST_BUF_SIZE];
+    int  pos = 0;
+
+    uint32_t ts = isNtpSynced() ? (uint32_t)time(nullptr) : millis() / 1000;
+    bool overall = overallPass(results, count);
+
+    pos += snprintf(buf + pos, sizeof(buf) - pos,
+                    "{\"ts\":%u,\"overall\":\"%s\",\"checks\":[",
+                    ts, overall ? "pass" : "fail");
+
+    for (uint8_t i = 0; i < count; i++) {
+        pos += snprintf(buf + pos, sizeof(buf) - pos,
+            "%s{\"name\":\"%s\",\"category\":\"%s\",\"pass\":%s,\"detail\":\"%s\"}",
+            i ? "," : "", results[i].name, results[i].category,
+            results[i].pass ? "true" : "false", results[i].detail);
+    }
+    pos += snprintf(buf + pos, sizeof(buf) - pos, "]}");
+
+    char topic[MQTT_TOPIC_BUF_SIZE];
+    snprintf(topic, sizeof(topic), "cnc/%s/selftest_result", _clientId);
+
+    bool ok = _client.publish(topic, buf);
+    if (ok) {
+        LOG_I("[MQTT] selftest_result publish OK — %d bytes, overall=%s\n", pos, overall ? "pass" : "fail");
+    } else {
+        LOG_W("[MQTT] ✗ selftest_result publish GAGAL! (payload=%d, bufSize=%d)\n",
               pos, _client.getBufferSize());
     }
     return ok;
