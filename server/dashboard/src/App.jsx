@@ -166,8 +166,7 @@ function SelfTestPanel({
       <div className="test-body">
         <div className="test-desc">
           Jalankan diagnostik lengkap di device: sensor arus &amp; suhu (sanity + logika respons alarm),
-          aktuasi relay, kalibrasi NVS, event log, dan konektivitas MQTT/NTP. Hasil per-item ditampilkan
-          di bawah dan tersimpan sebagai riwayat.
+          aktuasi relay, kalibrasi NVS, event log, dan konektivitas MQTT/NTP.
         </div>
         <div className="test-controls">
           <button
@@ -201,11 +200,9 @@ function SelfTestPanel({
         )}
 
         <details className="selftest-advanced">
-          <summary>Trip Test Manual (1 sensor)</summary>
+          <summary>Trip Test Manual</summary>
           <div className="test-desc">
-            Trigger simulasi arus/suhu berlebih ke satu sensor — relay akan benar-benar trip (mesin mati).
-            Berbeda dari Self-Test di atas (yang non-destruktif), ini sengaja mematikan mesin untuk
-            memverifikasi proteksi overcurrent/overtemp end-to-end.
+            Trigger simulasi arus/suhu untuk menguji respons relay.
           </div>
           <div className="test-controls">
             <select
@@ -216,7 +213,7 @@ function SelfTestPanel({
               disabled={tripTestResult === 'running'}
             >
               {CURRENT_NAMES.map((n, i) => (
-                <option key={i} value={i}>{n} — batas {CURRENT_LIMITS[i]} A</option>
+                <option key={i} value={i}>{n} - batas {CURRENT_LIMITS[i]} A</option>
               ))}
             </select>
             <button
@@ -239,7 +236,7 @@ function SelfTestPanel({
               disabled={tripTempResult === 'running'}
             >
               {TEMP_NAMES.map((n, i) => (
-                <option key={i} value={i}>{n} — batas {TEMP_LIMITS[i]}°C</option>
+                <option key={i} value={i}>{n} - batas {TEMP_LIMITS[i]}°C</option>
               ))}
             </select>
             <button
