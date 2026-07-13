@@ -53,6 +53,48 @@ bool  emaInit[NUM_CURRENT_SENSORS]   = {};
 bool testOvercurrentActive = false;   // flag: inject arus palsu pada siklus berikutnya
 int  testOvercurrentSensor = 0;       // index sensor yang di-test (0–4)
 
+// ── [TEST] Penahanan nilai arus palsu — untuk uji histeresis end-to-end ──
+// Beda dari testOvercurrentActive (one-shot): nilai ini TERUS dipakai tiap
+// siklus selama testHoldActive[i]==true, sehingga bisa disimulasikan
+// beberapa tahap nilai berurutan (di atas ambang -> zona histeresis ->
+// di bawah ambang resume) tanpa perlu arus fisik sungguhan mengalir.
+bool  testHoldActive[NUM_CURRENT_SENSORS] = {};
+float testHoldValue[NUM_CURRENT_SENSORS]  = {};
+
+// ── [TEST] Penahanan nilai suhu palsu — sama seperti testHoldActive di atas,
+// tapi untuk kanal suhu (Spindle, Stepper_Z).
+bool  testHoldTempActive[NUM_TEMP_SENSORS] = {};
+float testHoldTempValue[NUM_TEMP_SENSORS]  = {};
+
+// ── [TEST] Helper waktu untuk korelasi presisi Serial Monitor ↔ CSV/API ──
+// Mencetak "epoch=<unix_ts> uptime=<ms>" di tiap log pengujian, sehingga
+// screenshot Serial Monitor/Plotter bisa dicocokkan ke kolom waktu di CSV
+// hasil skrip Python (yang membaca field sama: data.ts dari payload MQTT).
+// Catatan: isNtpSynced() ada di kelas MqttClient (private ke instance mqtt),
+// jadi di sini pakai pengecekan setara langsung ke time(nullptr).
+static void logTestTimestamp() {
+    time_t now = time(nullptr);
+    bool   ntpOk = now > 1600000000;  // > tahun 2020, sama seperti NTP_EPOCH_2020
+    uint32_t epoch = ntpOk ? (uint32_t)now : 0;
+    LOG_D("        [waktu] epoch=%u uptime_ms=%lu ntpOk=%s\n",
+          epoch, millis(), ntpOk ? "true" : "false");
+}
+
+// ── [SAFE] Cek apakah semua kanal arus & suhu sudah di bawah ambang resume ──
+// (ambang alarm - histeresis). Dipakai onCommand() sebelum mengizinkan
+// relay_off, supaya logika reject/accept resume bisa diuji terpisah dari
+// pencatatan log.
+static bool isSafeToResume(const float* tempC, const float* tempAlarm, float tempHyst, int numTemp,
+                            const float* curA, const float* curAlarm, float curHyst, int numCur) {
+    for (int i = 0; i < numTemp; i++) {
+        if (tempC[i] > (tempAlarm[i] - tempHyst)) return false;
+    }
+    for (int i = 0; i < numCur; i++) {
+        if (fabsf(curA[i]) > (curAlarm[i] - curHyst)) return false;
+    }
+    return true;
+}
+
 // ── [SPRINT-1] Proteksi otomatis — arus, suhu, sensor fault ──────────────
 // Relay NORMALLY CLOSED: relay.on() = energized = kontak NC PUTUS = mesin MATI
 //                        relay.off() = de-energized = kontak NC TERHUBUNG = mesin HIDUP
@@ -68,8 +110,8 @@ void checkAlarms(const MqttPayload& p) {
                 time_t now; time(&now);
                 eventLog.addAndSave({(uint32_t)now, SensorType::CURRENT, (uint8_t)i,
                                       p.current[i].ampere, AlarmType::OVERCURRENT});
-                LOG_E("[ALARM] Arus sensor[%d] %s %.2fA — relay ON (matikan mesin)\n",
-                      i, CURRENT_NAMES[i], p.current[i].ampere);
+                LOG_E("[ALARM] epoch=%u Arus sensor[%d] %s %.2fA — relay ON (matikan mesin)\n",
+                      (uint32_t)now, i, CURRENT_NAMES[i], p.current[i].ampere);
             }
             prevCurAlarm[i] = true;
             relay.on();
@@ -83,8 +125,8 @@ void checkAlarms(const MqttPayload& p) {
                 time_t now; time(&now);
                 eventLog.addAndSave({(uint32_t)now, SensorType::TEMP, (uint8_t)i,
                                       p.temp[i].celsius, AlarmType::SENSOR_DISCONNECT});
-                LOG_E("[ALARM] Sensor suhu[%d] %s DISCONNECT — relay ON (matikan mesin)!\n",
-                      i, TEMP_NAMES[i]);
+                LOG_E("[ALARM] epoch=%u Sensor suhu[%d] %s DISCONNECT — relay ON (matikan mesin)!\n",
+                      (uint32_t)now, i, TEMP_NAMES[i]);
             }
             prevTmpAlarm[i] = true;
             relay.on();
@@ -95,8 +137,8 @@ void checkAlarms(const MqttPayload& p) {
                 time_t now; time(&now);
                 eventLog.addAndSave({(uint32_t)now, SensorType::TEMP, (uint8_t)i,
                                       p.temp[i].celsius, AlarmType::OVERTEMP});
-                LOG_E("[ALARM] Suhu sensor[%d] %s %.1f°C — relay ON (matikan mesin)\n",
-                      i, TEMP_NAMES[i], p.temp[i].celsius);
+                LOG_E("[ALARM] epoch=%u Suhu sensor[%d] %s %.1f°C — relay ON (matikan mesin)\n",
+                      (uint32_t)now, i, TEMP_NAMES[i], p.temp[i].celsius);
             }
             prevTmpAlarm[i] = true;
             relay.on();
@@ -139,24 +181,21 @@ void onCommand(const char* topic, const char* payload) {
     if (strstr(payload, "relay_off")) {
         // [HYSTERESIS] Tolak resume jika sensor masih di zona bahaya
         if (hasLatestPayload) {
-            for (int i = 0; i < NUM_TEMP_SENSORS; i++) {
-                if (latestPayload.temp[i].celsius > (TEMP_ALARM[i] - TEMP_HYSTERESIS)) {
-                    LOG_W("[SAFE] Tolak resume! Suhu %s masih %.1fC (Aman: <=%.1fC)\n",
-                          TEMP_NAMES[i], latestPayload.temp[i].celsius, TEMP_ALARM[i] - TEMP_HYSTERESIS);
-                    return;
-                }
-            }
-            for (int i = 0; i < NUM_CURRENT_SENSORS; i++) {
-                float currentVal = abs(latestPayload.current[i].ampere);
-                if (currentVal > (CURRENT_ALARM[i] - CURRENT_HYSTERESIS)) {
-                    LOG_W("[SAFE] Tolak resume! Arus %s masih %.2fA (Aman: <=%.2fA)\n",
-                          CURRENT_NAMES[i], currentVal, CURRENT_ALARM[i] - CURRENT_HYSTERESIS);
-                    return;
-                }
+            float tempC[NUM_TEMP_SENSORS], curA[NUM_CURRENT_SENSORS];
+            for (int i = 0; i < NUM_TEMP_SENSORS; i++)    tempC[i] = latestPayload.temp[i].celsius;
+            for (int i = 0; i < NUM_CURRENT_SENSORS; i++) curA[i]  = latestPayload.current[i].ampere;
+
+            if (!isSafeToResume(tempC, TEMP_ALARM, TEMP_HYSTERESIS, NUM_TEMP_SENSORS,
+                                 curA, CURRENT_ALARM, CURRENT_HYSTERESIS, NUM_CURRENT_SENSORS)) {
+                time_t nowReject; time(&nowReject);
+                LOG_W("[SAFE] epoch=%u Tolak resume! Sensor masih di zona bahaya (arus/suhu di atas ambang - hysteresis).\n",
+                      (uint32_t)nowReject);
+                return;
             }
         }
         relay.off();
-        LOG_I("[SAFE] Resume mesin berhasil.\n");
+        time_t nowAccept; time(&nowAccept);
+        LOG_I("[SAFE] epoch=%u Resume mesin berhasil.\n", (uint32_t)nowAccept);
         return;
     }
     if (strstr(payload, "cal_save"))  { cal.save();  return; }
@@ -185,6 +224,72 @@ void onCommand(const char* topic, const char* payload) {
         testOvercurrentActive = true;
         LOG_D("[TEST] Simulasi overcurrent sensor[%d] %s — akan trip pada siklus berikutnya\n",
               idx, CURRENT_NAMES[idx]);
+        return;
+    }
+
+    // test_hold:<index>:<nilai_ampere>
+    // Tahan pembacaan arus sensor ke-N pada nilai tertentu, terus-menerus,
+    // sampai diubah lewat perintah test_hold lain atau dihentikan test_clear.
+    // Dipakai untuk menguji perilaku resume di berbagai zona nilai
+    // (di atas ambang alarm, di zona histeresis, di bawah ambang resume)
+    // secara berurutan tanpa perlu arus fisik sungguhan.
+    static constexpr char CMD_TEST_HOLD[] = "test_hold:";
+    if (strncmp(payload, CMD_TEST_HOLD, sizeof(CMD_TEST_HOLD) - 1) == 0) {
+        char* rest = (char*)payload + sizeof(CMD_TEST_HOLD) - 1;
+        int   idx  = atoi(rest);
+        char* colon2 = strchr(rest, ':');
+        float nilai  = colon2 ? atof(colon2 + 1) : 0.0f;
+        idx = constrain(idx, 0, (int)NUM_CURRENT_SENSORS - 1);
+        testHoldActive[idx] = true;
+        testHoldValue[idx]  = nilai;
+        LOG_D("[TEST] Tahan arus sensor[%d] %s di %.2fA (ambang=%.2fA, resume<=%.2fA)\n",
+              idx, CURRENT_NAMES[idx], nilai, CURRENT_ALARM[idx],
+              CURRENT_ALARM[idx] - CURRENT_HYSTERESIS);
+        logTestTimestamp();
+        return;
+    }
+
+    // test_clear:<index>
+    // Hentikan penahanan pada sensor ke-N, kembali membaca nilai asli.
+    static constexpr char CMD_TEST_CLEAR[] = "test_clear:";
+    if (strncmp(payload, CMD_TEST_CLEAR, sizeof(CMD_TEST_CLEAR) - 1) == 0) {
+        int idx = atoi(payload + sizeof(CMD_TEST_CLEAR) - 1);
+        idx = constrain(idx, 0, (int)NUM_CURRENT_SENSORS - 1);
+        testHoldActive[idx] = false;
+        LOG_D("[TEST] Hentikan penahanan sensor[%d] %s, kembali ke pembacaan asli\n",
+              idx, CURRENT_NAMES[idx]);
+        logTestTimestamp();
+        return;
+    }
+
+    // test_hold_temp:<index>:<nilai_celsius>
+    // Sama seperti test_hold, tapi untuk kanal suhu (0=Spindle, 1=Stepper_Z).
+    static constexpr char CMD_TEST_HOLD_T[] = "test_hold_temp:";
+    if (strncmp(payload, CMD_TEST_HOLD_T, sizeof(CMD_TEST_HOLD_T) - 1) == 0) {
+        char* rest = (char*)payload + sizeof(CMD_TEST_HOLD_T) - 1;
+        int   idx  = atoi(rest);
+        char* colon2 = strchr(rest, ':');
+        float nilai  = colon2 ? atof(colon2 + 1) : 0.0f;
+        idx = constrain(idx, 0, (int)NUM_TEMP_SENSORS - 1);
+        testHoldTempActive[idx] = true;
+        testHoldTempValue[idx]  = nilai;
+        LOG_D("[TEST] Tahan suhu sensor[%d] %s di %.1fC (ambang=%.1fC, resume<=%.1fC)\n",
+              idx, TEMP_NAMES[idx], nilai, TEMP_ALARM[idx],
+              TEMP_ALARM[idx] - TEMP_HYSTERESIS);
+        logTestTimestamp();
+        return;
+    }
+
+    // test_clear_temp:<index>
+    // Hentikan penahanan suhu pada sensor ke-N, kembali membaca nilai asli.
+    static constexpr char CMD_TEST_CLEAR_T[] = "test_clear_temp:";
+    if (strncmp(payload, CMD_TEST_CLEAR_T, sizeof(CMD_TEST_CLEAR_T) - 1) == 0) {
+        int idx = atoi(payload + sizeof(CMD_TEST_CLEAR_T) - 1);
+        idx = constrain(idx, 0, (int)NUM_TEMP_SENSORS - 1);
+        testHoldTempActive[idx] = false;
+        LOG_D("[TEST] Hentikan penahanan suhu sensor[%d] %s, kembali ke pembacaan asli\n",
+              idx, TEMP_NAMES[idx]);
+        logTestTimestamp();
         return;
     }
 }
@@ -235,9 +340,6 @@ void loop() {
     for (int i = 0; i < NUM_TEMP_SENSORS; i++)
         payload.temp[i] = tempSensors.read(i);
 
-    latestPayload = payload;
-    hasLatestPayload = true;
-
     // [TEST] Inject nilai arus palsu jika test_overcurrent aktif
     if (testOvercurrentActive) {
         int si = testOvercurrentSensor;
@@ -247,6 +349,34 @@ void loop() {
         LOG_D("[TEST] Inject arus %.2fA ke sensor[%d] %s (alarm threshold: %.2fA)\n",
               payload.current[si].ampere, si, CURRENT_NAMES[si], CURRENT_ALARM[si]);
     }
+
+    // [TEST] Injeksi tertahan — dibaca tiap siklus selama testHoldActive[i] true.
+    // Diterapkan SETELAH one-shot test di atas, supaya test_hold bisa
+    // menimpa/melanjutkan simulasi tanpa konflik.
+    for (int i = 0; i < NUM_CURRENT_SENSORS; i++) {
+        if (testHoldActive[i]) {
+            payload.current[i].ampere = testHoldValue[i];
+            payload.current[i].alarm  = fabsf(testHoldValue[i]) > CURRENT_ALARM[i];
+        }
+    }
+
+    // [TEST] Injeksi tertahan untuk kanal suhu — pola identik dengan arus.
+    for (int i = 0; i < NUM_TEMP_SENSORS; i++) {
+        if (testHoldTempActive[i]) {
+            payload.temp[i].celsius = testHoldTempValue[i];
+            payload.temp[i].alarm   = testHoldTempValue[i] > TEMP_ALARM[i];
+            payload.temp[i].sensorError = false;  // pastikan tidak dibaca sebagai sensor lepas
+        }
+    }
+
+    // [FIX] latestPayload dipindah ke SINI (setelah seluruh injeksi test),
+    // supaya isSafeToResume() di onCommand() benar-benar melihat nilai yang
+    // sedang disimulasikan/tertahan, bukan nilai asli sebelum injeksi.
+    // Sebelumnya latestPayload di-set SEBELUM blok injeksi test dijalankan,
+    // sehingga test_overcurrent/test_overtemp tidak pernah memengaruhi
+    // keputusan resume sama sekali — celah ini turut diperbaiki oleh diff ini.
+    latestPayload     = payload;
+    hasLatestPayload   = true;
 
     checkAlarms(payload);   // alarm dicek dari nilai raw
 
