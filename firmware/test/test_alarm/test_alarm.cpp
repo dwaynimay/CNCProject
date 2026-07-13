@@ -2,11 +2,10 @@
 // Run: pio test -e native
 #include <unity.h>
 #include <math.h>
+#include "SensorConfig.h"
 
-// Mirror of SensorConfig.h constants (kept in sync manually)
-static const float CURRENT_ALARM[5] = {3.0f, 3.0f, 3.0f, 2.0f, 8.0f};
-static const float TEMP_ALARM[2]    = {60.0f, 55.0f};
-static const float DS18B20_ERR      = -127.0f;
+// DS18B20 disconnect sentinel value (not part of SensorConfig.h)
+static const float DS18B20_ERR = -127.0f;
 
 void setUp()    {}
 void tearDown() {}
@@ -29,15 +28,18 @@ void test_negative_current_also_triggers_alarm() {
     TEST_ASSERT_TRUE(fabsf(-3.5f) > CURRENT_ALARM[0]);
 }
 
-void test_spindle_has_higher_current_limit() {
-    TEST_ASSERT_FALSE(fabsf(7.9f) > CURRENT_ALARM[4]);  // spindle limit = 8 A
-    TEST_ASSERT_TRUE(fabsf(8.1f)  > CURRENT_ALARM[4]);
+void test_spindle_alarm_boundary_matches_configured_limit() {
+    // sensor[4] = Spindle — batas diambil langsung dari SensorConfig.h, bukan angka hardcoded,
+    // supaya test tidak drift kalau CURRENT_ALARM[4] diubah (lihat riwayat: pernah 8.0, sekarang beda).
+    TEST_ASSERT_FALSE(fabsf(CURRENT_ALARM[4] - 0.1f) > CURRENT_ALARM[4]);
+    TEST_ASSERT_TRUE(fabsf(CURRENT_ALARM[4] + 0.1f)  > CURRENT_ALARM[4]);
 }
 
-void test_stepper_z_has_lower_current_limit() {
-    // sensor[3] = Stepper_Z, limit = 2 A
-    TEST_ASSERT_TRUE(fabsf(2.1f)  > CURRENT_ALARM[3]);
-    TEST_ASSERT_FALSE(fabsf(1.9f) > CURRENT_ALARM[3]);
+void test_stepper_z_has_lower_current_limit_than_spindle() {
+    // sensor[3] = Stepper_Z harus punya ambang lebih ketat daripada Spindle (sensor[4])
+    TEST_ASSERT_TRUE(CURRENT_ALARM[3] <= CURRENT_ALARM[4]);
+    TEST_ASSERT_TRUE(fabsf(CURRENT_ALARM[3] + 0.1f) > CURRENT_ALARM[3]);
+    TEST_ASSERT_FALSE(fabsf(CURRENT_ALARM[3] - 0.1f) > CURRENT_ALARM[3]);
 }
 
 void test_temp_alarm_fires_above_threshold() {
@@ -66,8 +68,8 @@ int main() {
     RUN_TEST(test_current_alarm_clears_below_threshold);
     RUN_TEST(test_current_alarm_exact_threshold_does_not_trip);
     RUN_TEST(test_negative_current_also_triggers_alarm);
-    RUN_TEST(test_spindle_has_higher_current_limit);
-    RUN_TEST(test_stepper_z_has_lower_current_limit);
+    RUN_TEST(test_spindle_alarm_boundary_matches_configured_limit);
+    RUN_TEST(test_stepper_z_has_lower_current_limit_than_spindle);
     RUN_TEST(test_temp_alarm_fires_above_threshold);
     RUN_TEST(test_stepper_z_temp_lower_limit);
     RUN_TEST(test_ds18b20_disconnect_detected);

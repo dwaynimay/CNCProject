@@ -1,5 +1,9 @@
 #pragma once
+#ifdef UNIT_TEST
+#include <stdint.h>
+#else
 #include <Arduino.h>
+#endif
 #include "types.h"
 
 // ── Edit file ini untuk sesuaikan dengan hardware ──────────

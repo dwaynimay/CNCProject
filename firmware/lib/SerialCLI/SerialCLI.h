@@ -1,8 +1,11 @@
 #pragma once
 #include <Arduino.h>
+#include <functional>
 #include "Calibration.h"
 #include "ACS712.h"
 #include "EventLog.h"
+
+using SelfTestCallback = std::function<void()>;
 
 class SerialCLI {
 public:
@@ -10,6 +13,7 @@ public:
     void begin();
     void loop();
     void printLive(const CurrentReading* readings, uint8_t n);
+    void setSelfTestCallback(SelfTestCallback cb);
 private:
     Calibration& _cal;
     ACS712*      _sensors;
@@ -18,6 +22,7 @@ private:
     EventLog&    _log;
     bool         _showLive;
     String       _cmdBuf;
+    SelfTestCallback _selfTestCb;
 
     void handleCommand(String cmd);
     void doOffset(int idx);

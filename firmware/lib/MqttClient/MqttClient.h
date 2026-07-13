@@ -4,12 +4,14 @@
 #include <functional>
 #include "types.h"
 #include "SensorConfig.h"
+#include "SelfTest.h"
 
 using MqttCommandCallback = std::function<void(const char* topic, const char* payload)>;
 
 constexpr uint32_t WIFI_CONNECT_TIMEOUT_MS  = 30000;   // timeout WiFi sebelum reboot (ms)
 constexpr uint32_t MQTT_RECONNECT_INTERVAL  = 5000;    // interval reconnect non-blocking (ms)
 constexpr uint16_t MQTT_PAYLOAD_BUF_SIZE    = 512;     // buffer JSON telemetry (bytes)
+constexpr uint16_t MQTT_SELFTEST_BUF_SIZE   = 3072;    // buffer JSON hasil self-test (bytes) — bisa berisi banyak check
 constexpr uint16_t MQTT_CMD_BUF_SIZE        = 256;     // buffer command inbound (bytes)
 constexpr uint8_t  MQTT_TOPIC_BUF_SIZE      = 64;      // buffer nama topic (bytes)
 
@@ -20,6 +22,7 @@ public:
                const char* host, uint16_t port, const char* clientId);
     void loop();
     bool publish(const MqttPayload& payload);  // true = publish berhasil
+    bool publishSelfTestResult(const SelfTestResult* results, uint8_t count);  // true = publish berhasil
     bool isNtpSynced();                         // true = waktu sudah disinkronisasi
     void setCommandCallback(MqttCommandCallback cb);
     bool isConnected();

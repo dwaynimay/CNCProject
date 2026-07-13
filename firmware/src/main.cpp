@@ -11,6 +11,11 @@
 #include "SerialCLI.h"
 #include "EventLog.h"
 #include "Logger.h"
+#include "EmaFilter.h"
+#include "SafetyLogic.h"
+#include "SelfTest.h"
+#include <stdarg.h>
+#include <math.h>
 
 // ── Credentials — dipisah agar tidak masuk ke git ─────────
 #include "credentials.h"
@@ -53,6 +58,10 @@ bool  emaInit[NUM_CURRENT_SENSORS]   = {};
 bool testOvercurrentActive = false;   // flag: inject arus palsu pada siklus berikutnya
 int  testOvercurrentSensor = 0;       // index sensor yang di-test (0–4)
 
+// ── [TEST] Simulasi overtemp dari dashboard ───────────────────────────────
+bool testOvertempActive = false;      // flag: inject suhu palsu pada siklus berikutnya
+int  testOvertempSensor = 0;          // index sensor yang di-test (0–1)
+
 // ── [TEST] Penahanan nilai arus palsu — untuk uji histeresis end-to-end ──
 // Beda dari testOvercurrentActive (one-shot): nilai ini TERUS dipakai tiap
 // siklus selama testHoldActive[i]==true, sehingga bisa disimulasikan
@@ -80,20 +89,13 @@ static void logTestTimestamp() {
           epoch, millis(), ntpOk ? "true" : "false");
 }
 
-// ── [SAFE] Cek apakah semua kanal arus & suhu sudah di bawah ambang resume ──
-// (ambang alarm - histeresis). Dipakai onCommand() sebelum mengizinkan
-// relay_off, supaya logika reject/accept resume bisa diuji terpisah dari
-// pencatatan log.
-static bool isSafeToResume(const float* tempC, const float* tempAlarm, float tempHyst, int numTemp,
-                            const float* curA, const float* curAlarm, float curHyst, int numCur) {
-    for (int i = 0; i < numTemp; i++) {
-        if (tempC[i] > (tempAlarm[i] - tempHyst)) return false;
-    }
-    for (int i = 0; i < numCur; i++) {
-        if (fabsf(curA[i]) > (curAlarm[i] - curHyst)) return false;
-    }
-    return true;
-}
+// ── [SELF-TEST] Diagnostik terstruktur — non-destruktif, aman dijalankan kapan saja ──
+// Pemeriksaan sanity/logika saja (tidak men-trip relay atau menulis EventLog asli).
+// Untuk uji trip relay sungguhan, tetap pakai command test_overcurrent yang sudah ada.
+SelfTestResult selfTestResults[SELFTEST_MAX_CHECKS];
+uint8_t        selfTestCount = 0;
+static char    selfTestNameBuf[SELFTEST_MAX_CHECKS][32];
+void runSelfTest();  // forward decl — dipakai di onCommand(), didefinisikan di bawah
 
 // ── [SPRINT-1] Proteksi otomatis — arus, suhu, sensor fault ──────────────
 // Relay NORMALLY CLOSED: relay.on() = energized = kontak NC PUTUS = mesin MATI
@@ -227,6 +229,27 @@ void onCommand(const char* topic, const char* payload) {
         return;
     }
 
+    // test_overtemp  atau  test_overtemp:<index>
+    // Simulasi suhu berlebih satu siklus → relay trip otomatis
+    static constexpr char CMD_TEST_OT[] = "test_overtemp";
+    if (strncmp(payload, CMD_TEST_OT, sizeof(CMD_TEST_OT) - 1) == 0) {
+        int idx = 0;
+        if (payload[sizeof(CMD_TEST_OT) - 1] == ':') idx = atoi(payload + sizeof(CMD_TEST_OT));
+        idx = constrain(idx, 0, (int)NUM_TEMP_SENSORS - 1);
+        testOvertempSensor = idx;
+        testOvertempActive = true;
+        LOG_D("[TEST] Simulasi overtemp sensor[%d] %s — akan trip pada siklus berikutnya\n",
+              idx, TEMP_NAMES[idx]);
+        return;
+    }
+
+    // self_test — jalankan diagnostik lengkap & publish hasil terstruktur
+    if (strstr(payload, "self_test")) {
+        runSelfTest();
+        mqtt.publishSelfTestResult(selfTestResults, selfTestCount);
+        return;
+    }
+
     // test_hold:<index>:<nilai_ampere>
     // Tahan pembacaan arus sensor ke-N pada nilai tertentu, terus-menerus,
     // sampai diubah lewat perintah test_hold lain atau dihentikan test_clear.
@@ -294,6 +317,106 @@ void onCommand(const char* topic, const char* payload) {
     }
 }
 
+void addSelfTestCheck(const char* category, bool pass, const char* name, const char* detailFmt, ...) {
+    if (selfTestCount >= SELFTEST_MAX_CHECKS) return;
+    uint8_t idx = selfTestCount++;
+    strncpy(selfTestNameBuf[idx], name, sizeof(selfTestNameBuf[idx]) - 1);
+    selfTestNameBuf[idx][sizeof(selfTestNameBuf[idx]) - 1] = '\0';
+
+    SelfTestResult& r = selfTestResults[idx];
+    r.name     = selfTestNameBuf[idx];
+    r.category = category;
+    r.pass     = pass;
+
+    va_list args;
+    va_start(args, detailFmt);
+    vsnprintf(r.detail, SELFTEST_DETAIL_SIZE, detailFmt, args);
+    va_end(args);
+}
+
+void runSelfTest() {
+    selfTestCount = 0;
+    esp_task_wdt_reset();
+
+    // ── Konektivitas ──
+    addSelfTestCheck("connectivity", mqtt.isConnected(), "MQTT Connected",
+                      mqtt.isConnected() ? "terhubung ke broker" : "tidak terhubung ke broker");
+    addSelfTestCheck("connectivity", mqtt.isNtpSynced(), "NTP Synced",
+                      mqtt.isNtpSynced() ? "waktu tersinkron via NTP" : "belum sync — pakai uptime sebagai timestamp");
+
+    // ── Sensor arus: sanity + verifikasi logika respons alarm ──
+    for (int i = 0; i < NUM_CURRENT_SENSORS; i++) {
+        esp_task_wdt_reset();
+        char name[32];
+        CurrentReading r = sensors[i].read(cal.getData(i));
+
+        snprintf(name, sizeof(name), "Current[%d] sanity", i);
+        bool sane = evaluateRange(r.ampere, -25.0f, 25.0f);
+        addSelfTestCheck("current", sane, name, "%s raw=%.2fA", CURRENT_NAMES[i], r.ampere);
+
+        snprintf(name, sizeof(name), "Current[%d] alarm-logic", i);
+        float injected = CURRENT_ALARM[i] * 1.5f;
+        bool  respond   = evaluateAlarmResponse(injected, CURRENT_ALARM[i]);
+        addSelfTestCheck("current", respond, name, "%s inject=%.2fA thr=%.2fA",
+                          CURRENT_NAMES[i], injected, CURRENT_ALARM[i]);
+    }
+
+    // ── Sensor suhu: sanity + verifikasi logika respons alarm ──
+    for (int i = 0; i < NUM_TEMP_SENSORS; i++) {
+        esp_task_wdt_reset();
+        char name[32];
+        TempReading r = tempSensors.read(i);
+
+        snprintf(name, sizeof(name), "Temp[%d] sanity", i);
+        bool sane = !r.sensorError && evaluateRange(r.celsius, -10.0f, 120.0f);
+        addSelfTestCheck("temp", sane, name, "%s %.1fC%s",
+                          TEMP_NAMES[i], r.celsius, r.sensorError ? " (disconnect)" : "");
+
+        snprintf(name, sizeof(name), "Temp[%d] alarm-logic", i);
+        float injected = TEMP_ALARM[i] * 1.2f;
+        bool  respond   = evaluateAlarmResponse(injected, TEMP_ALARM[i]);
+        addSelfTestCheck("temp", respond, name, "%s inject=%.1fC thr=%.1fC",
+                          TEMP_NAMES[i], injected, TEMP_ALARM[i]);
+    }
+
+    // ── Relay actuation — hanya jika mesin idle & tidak dalam safe mode ──
+    esp_task_wdt_reset();
+    if (safeModeLatch) {
+        addSelfTestCheck("relay", false, "Relay Actuation", "dilewati: safe mode aktif, reboot untuk reset");
+    } else if (relay.isOn()) {
+        addSelfTestCheck("relay", false, "Relay Actuation", "dilewati: mesin sedang aktif (relay ON)");
+    } else {
+        relay.on();
+        bool step1 = relay.isOn();
+        relay.off();
+        bool step2 = !relay.isOn();
+        addSelfTestCheck("relay", step1 && step2, "Relay Actuation",
+                          "toggle on->off berhasil, state kembali idle");
+    }
+
+    // ── Kalibrasi NVS roundtrip ──
+    esp_task_wdt_reset();
+    {
+        double before = cal.getData(0).vMid;
+        cal.save();
+        cal.load();
+        double after = cal.getData(0).vMid;
+        addSelfTestCheck("calibration", fabs(before - after) < 0.01, "Calibration NVS Roundtrip",
+                          "vMid before=%.3f after=%.3f", before, after);
+    }
+
+    // ── EventLog ring-buffer roundtrip — pakai instance sementara terpisah,
+    //    supaya trip log asli di eventLog tidak tercemar entry palsu ──
+    esp_task_wdt_reset();
+    {
+        EventLogBuffer tempLog;
+        EventEntry dummy{0, SensorType::CURRENT, 0, 0.0f, AlarmType::OVERCURRENT};
+        tempLog.add(dummy);
+        bool ok = (tempLog.count() == 1) && (tempLog.get(0).value == 0.0f);
+        addSelfTestCheck("eventlog", ok, "EventLog Roundtrip", "ring buffer add+get OK");
+    }
+}
+
 void setup() {
     Serial.begin(115200);
 
@@ -306,6 +429,10 @@ void setup() {
     eventLog.load();
     tempSensors.begin();
     relay.begin();      // NC: relay OFF saat boot = kontak NC terhubung = mesin bisa jalan
+    cli.setSelfTestCallback([]() {
+        runSelfTest();
+        mqtt.publishSelfTestResult(selfTestResults, selfTestCount);
+    });
     cli.begin();
 
     mqtt.setCommandCallback(onCommand);
@@ -350,6 +477,16 @@ void loop() {
               payload.current[si].ampere, si, CURRENT_NAMES[si], CURRENT_ALARM[si]);
     }
 
+    // [TEST] Inject nilai suhu palsu jika test_overtemp aktif
+    if (testOvertempActive) {
+        int si = testOvertempSensor;
+        payload.temp[si].celsius = TEMP_ALARM[si] * 1.2f;  // 120% batas alarm
+        payload.temp[si].alarm   = true;
+        testOvertempActive       = false;   // one-shot: reset setelah satu siklus
+        LOG_D("[TEST] Inject suhu %.1fC ke sensor[%d] %s (alarm threshold: %.1fC)\n",
+              payload.temp[si].celsius, si, TEMP_NAMES[si], TEMP_ALARM[si]);
+    }
+
     // [TEST] Injeksi tertahan — dibaca tiap siklus selama testHoldActive[i] true.
     // Diterapkan SETELAH one-shot test di atas, supaya test_hold bisa
     // menimpa/melanjutkan simulasi tanpa konflik.
@@ -383,7 +520,7 @@ void loop() {
     // Terapkan EMA setelah alarm check — hanya untuk nilai tampilan dashboard
     for (int i = 0; i < NUM_CURRENT_SENSORS; i++) {
         float raw     = payload.current[i].ampere;
-        emaAmpere[i]  = emaInit[i] ? EMA_ALPHA * raw + (1.0f - EMA_ALPHA) * emaAmpere[i] : raw;
+        emaAmpere[i]  = emaUpdate(raw, emaAmpere[i], emaInit[i], EMA_ALPHA);
         emaInit[i]    = true;
         payload.current[i].ampere = emaAmpere[i];
     }     // cek alarm SEBELUM publish
