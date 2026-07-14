@@ -1,0 +1,786 @@
+(.venv) PS C:\Users\missk\Documents\vskode\CNCProject> ^C
+(.venv) PS C:\Users\missk\Documents\vskode\CNCProject> python pengujian/uji_otomatis_bab5.py
+============================================================
+MULAI PENGUJIAN OTOMATIS BAB 5
+Target: http://192.168.1.8:3010 | Device: cnc-esp32
+============================================================
+
+Pastikan mesin AMAN untuk diuji (motor tidak sedang memotong).
+Lanjutkan? (y/n): y
+
+============================================================
+PENGUJIAN: Ambang Proteksi Arus & Waktu Pemutusan
+============================================================
+
+[Arus] Kanal Stepper_X, percobaan 1/10
+  Alarm terdeteksi. Arus tercatat: 1.331 A, relayOn=True, device_epoch=1783945018
+
+[Arus] Kanal Stepper_X, percobaan 2/10
+  Alarm terdeteksi. Arus tercatat: 1.499 A, relayOn=True, device_epoch=1783945030
+
+[Arus] Kanal Stepper_X, percobaan 3/10
+  Alarm terdeteksi. Arus tercatat: 1.515 A, relayOn=True, device_epoch=1783945042
+
+[Arus] Kanal Stepper_X, percobaan 4/10
+  Alarm terdeteksi. Arus tercatat: 1.514 A, relayOn=True, device_epoch=1783945054
+
+[Arus] Kanal Stepper_X, percobaan 5/10
+  Alarm terdeteksi. Arus tercatat: 1.518 A, relayOn=True, device_epoch=1783945066
+
+[Arus] Kanal Stepper_X, percobaan 6/10
+  Alarm terdeteksi. Arus tercatat: 1.523 A, relayOn=True, device_epoch=1783945078
+
+[Arus] Kanal Stepper_X, percobaan 7/10
+  Alarm terdeteksi. Arus tercatat: 1.517 A, relayOn=True, device_epoch=1783945090
+
+[Arus] Kanal Stepper_X, percobaan 8/10
+  Alarm terdeteksi. Arus tercatat: 1.521 A, relayOn=True, device_epoch=1783945102
+
+[Arus] Kanal Stepper_X, percobaan 9/10
+  Alarm terdeteksi. Arus tercatat: 1.514 A, relayOn=True, device_epoch=1783945114
+
+[Arus] Kanal Stepper_X, percobaan 10/10
+  Alarm terdeteksi. Arus tercatat: 1.518 A, relayOn=True, device_epoch=1783945126
+
+[Arus] Kanal Stepper_Y1, percobaan 1/10
+  Alarm terdeteksi. Arus tercatat: 1.336 A, relayOn=True, device_epoch=1783945138
+
+[Arus] Kanal Stepper_Y1, percobaan 2/10
+  Alarm terdeteksi. Arus tercatat: 1.49 A, relayOn=True, device_epoch=1783945150
+
+[Arus] Kanal Stepper_Y1, percobaan 3/10
+  Alarm terdeteksi. Arus tercatat: 1.49 A, relayOn=True, device_epoch=1783945150
+
+[Arus] Kanal Stepper_Y1, percobaan 4/10
+  Alarm terdeteksi. Arus tercatat: 1.46 A, relayOn=True, device_epoch=1783945164
+
+[Arus] Kanal Stepper_Y1, percobaan 5/10
+  Alarm terdeteksi. Arus tercatat: 1.51 A, relayOn=True, device_epoch=1783945176
+
+[Arus] Kanal Stepper_Y1, percobaan 6/10
+  Alarm terdeteksi. Arus tercatat: 1.523 A, relayOn=True, device_epoch=1783945188
+
+[Arus] Kanal Stepper_Y1, percobaan 7/10
+  Alarm terdeteksi. Arus tercatat: 1.514 A, relayOn=True, device_epoch=1783945200
+
+[Arus] Kanal Stepper_Y1, percobaan 8/10
+  Alarm terdeteksi. Arus tercatat: 1.517 A, relayOn=True, device_epoch=1783945212
+
+[Arus] Kanal Stepper_Y1, percobaan 9/10
+  Alarm terdeteksi. Arus tercatat: 1.513 A, relayOn=True, device_epoch=1783945224
+
+[Arus] Kanal Stepper_Y1, percobaan 10/10
+  Alarm terdeteksi. Arus tercatat: 1.51 A, relayOn=True, device_epoch=1783945236
+
+[Arus] Kanal Stepper_Y2, percobaan 1/10
+  Alarm terdeteksi. Arus tercatat: 1.337 A, relayOn=True, device_epoch=1783945260
+
+[Arus] Kanal Stepper_Y2, percobaan 2/10
+  Alarm terdeteksi. Arus tercatat: 1.496 A, relayOn=True, device_epoch=1783945272
+
+[Arus] Kanal Stepper_Y2, percobaan 3/10
+  Alarm terdeteksi. Arus tercatat: 1.52 A, relayOn=True, device_epoch=1783945284
+
+[Arus] Kanal Stepper_Y2, percobaan 4/10
+  Alarm terdeteksi. Arus tercatat: 1.52 A, relayOn=True, device_epoch=1783945296
+
+[Arus] Kanal Stepper_Y2, percobaan 5/10
+  Alarm terdeteksi. Arus tercatat: 1.52 A, relayOn=True, device_epoch=1783945308
+
+[Arus] Kanal Stepper_Y2, percobaan 6/10
+  Alarm terdeteksi. Arus tercatat: 1.518 A, relayOn=True, device_epoch=1783945320
+
+[Arus] Kanal Stepper_Y2, percobaan 7/10
+  Alarm terdeteksi. Arus tercatat: 1.525 A, relayOn=True, device_epoch=1783945332
+
+[Arus] Kanal Stepper_Y2, percobaan 8/10
+  Alarm terdeteksi. Arus tercatat: 1.519 A, relayOn=True, device_epoch=1783945344
+
+[Arus] Kanal Stepper_Y2, percobaan 9/10
+  Alarm terdeteksi. Arus tercatat: 1.52 A, relayOn=True, device_epoch=1783945356
+
+[Arus] Kanal Stepper_Y2, percobaan 10/10
+  Alarm terdeteksi. Arus tercatat: 1.519 A, relayOn=True, device_epoch=1783945368
+
+[Arus] Kanal Stepper_Z, percobaan 1/10
+  Alarm terdeteksi. Arus tercatat: 0.88 A, relayOn=True, device_epoch=1783945380
+
+[Arus] Kanal Stepper_Z, percobaan 2/10
+  Alarm terdeteksi. Arus tercatat: 0.986 A, relayOn=True, device_epoch=1783945392
+
+[Arus] Kanal Stepper_Z, percobaan 3/10
+  Alarm terdeteksi. Arus tercatat: 0.999 A, relayOn=True, device_epoch=1783945404
+
+[Arus] Kanal Stepper_Z, percobaan 4/10
+  Alarm terdeteksi. Arus tercatat: 1.004 A, relayOn=True, device_epoch=1783945416
+
+[Arus] Kanal Stepper_Z, percobaan 5/10
+  Alarm terdeteksi. Arus tercatat: 1.003 A, relayOn=True, device_epoch=1783945428
+
+[Arus] Kanal Stepper_Z, percobaan 6/10
+  Alarm terdeteksi. Arus tercatat: 1.007 A, relayOn=True, device_epoch=1783945440
+
+[Arus] Kanal Stepper_Z, percobaan 7/10
+  Alarm terdeteksi. Arus tercatat: 1.007 A, relayOn=True, device_epoch=1783945452
+
+[Arus] Kanal Stepper_Z, percobaan 8/10
+  Alarm terdeteksi. Arus tercatat: 1.002 A, relayOn=True, device_epoch=1783945464
+
+[Arus] Kanal Stepper_Z, percobaan 9/10
+  Alarm terdeteksi. Arus tercatat: 1.003 A, relayOn=True, device_epoch=1783945476
+
+[Arus] Kanal Stepper_Z, percobaan 10/10
+  Alarm terdeteksi. Arus tercatat: 1.007 A, relayOn=True, device_epoch=1783945488
+
+[Arus] Kanal Spindle, percobaan 1/10
+  Alarm terdeteksi. Arus tercatat: 1.316 A, relayOn=True, device_epoch=1783945500
+
+[Arus] Kanal Spindle, percobaan 2/10
+  Alarm terdeteksi. Arus tercatat: 1.482 A, relayOn=True, device_epoch=1783945512
+
+[Arus] Kanal Spindle, percobaan 3/10
+  Alarm terdeteksi. Arus tercatat: 1.502 A, relayOn=True, device_epoch=1783945524
+
+[Arus] Kanal Spindle, percobaan 4/10
+  Alarm terdeteksi. Arus tercatat: 1.501 A, relayOn=True, device_epoch=1783945536
+
+[Arus] Kanal Spindle, percobaan 5/10
+  Alarm terdeteksi. Arus tercatat: 1.504 A, relayOn=True, device_epoch=1783945548
+
+[Arus] Kanal Spindle, percobaan 6/10
+  Alarm terdeteksi. Arus tercatat: 1.504 A, relayOn=True, device_epoch=1783945548
+
+[Arus] Kanal Spindle, percobaan 7/10
+  Alarm terdeteksi. Arus tercatat: 1.472 A, relayOn=True, device_epoch=1783945562
+
+[Arus] Kanal Spindle, percobaan 8/10
+  Alarm terdeteksi. Arus tercatat: 1.477 A, relayOn=True, device_epoch=1783945574
+
+[Arus] Kanal Spindle, percobaan 9/10
+  Alarm terdeteksi. Arus tercatat: 1.51 A, relayOn=True, device_epoch=1783945586
+
+[Arus] Kanal Spindle, percobaan 10/10
+  Alarm terdeteksi. Arus tercatat: 1.513 A, relayOn=True, device_epoch=1783945598
+  Tersimpan: hasil_ambang_arus.csv (50 baris)
+
+============================================================
+PENGUJIAN: Ambang Proteksi Suhu & Waktu Pemutusan
+============================================================
+
+[Suhu] Kanal Spindle, percobaan 1/10
+  Alarm TIDAK terdeteksi dalam riwayat — periksa manual.
+
+[Suhu] Kanal Spindle, percobaan 2/10
+  Alarm terdeteksi. Suhu tercatat: 72 C, relayOn=True, device_epoch=1783945622
+
+[Suhu] Kanal Spindle, percobaan 3/10
+  Alarm terdeteksi. Suhu tercatat: 72 C, relayOn=True, device_epoch=1783945646
+
+[Suhu] Kanal Spindle, percobaan 4/10
+  Alarm terdeteksi. Suhu tercatat: 72 C, relayOn=True, device_epoch=1783945658
+
+[Suhu] Kanal Spindle, percobaan 5/10
+  Alarm terdeteksi. Suhu tercatat: 72 C, relayOn=True, device_epoch=1783945670
+
+[Suhu] Kanal Spindle, percobaan 6/10
+  Alarm terdeteksi. Suhu tercatat: 72 C, relayOn=True, device_epoch=1783945682
+
+[Suhu] Kanal Spindle, percobaan 7/10
+  Alarm terdeteksi. Suhu tercatat: 72 C, relayOn=True, device_epoch=1783945694
+
+[Suhu] Kanal Spindle, percobaan 8/10
+  Alarm terdeteksi. Suhu tercatat: 72 C, relayOn=True, device_epoch=1783945706
+
+[Suhu] Kanal Spindle, percobaan 9/10
+  Alarm terdeteksi. Suhu tercatat: 72 C, relayOn=True, device_epoch=1783945718
+
+[Suhu] Kanal Spindle, percobaan 10/10
+  Alarm terdeteksi. Suhu tercatat: 72 C, relayOn=True, device_epoch=1783945730
+
+[Suhu] Kanal Stepper_Z, percobaan 1/10
+  Alarm terdeteksi. Suhu tercatat: 66 C, relayOn=True, device_epoch=1783945742
+
+[Suhu] Kanal Stepper_Z, percobaan 2/10
+  Alarm terdeteksi. Suhu tercatat: 66 C, relayOn=True, device_epoch=1783945754
+
+[Suhu] Kanal Stepper_Z, percobaan 3/10
+  Alarm terdeteksi. Suhu tercatat: 66 C, relayOn=True, device_epoch=1783945766
+
+[Suhu] Kanal Stepper_Z, percobaan 4/10
+  Alarm terdeteksi. Suhu tercatat: 66 C, relayOn=True, device_epoch=1783945778
+
+[Suhu] Kanal Stepper_Z, percobaan 5/10
+  Alarm terdeteksi. Suhu tercatat: 66 C, relayOn=True, device_epoch=1783945790
+
+[Suhu] Kanal Stepper_Z, percobaan 6/10
+  Alarm terdeteksi. Suhu tercatat: 66 C, relayOn=True, device_epoch=1783945802
+
+[Suhu] Kanal Stepper_Z, percobaan 7/10
+  Alarm terdeteksi. Suhu tercatat: 66 C, relayOn=True, device_epoch=1783945814
+
+[Suhu] Kanal Stepper_Z, percobaan 8/10
+  Alarm terdeteksi. Suhu tercatat: 66 C, relayOn=True, device_epoch=1783945826
+
+[Suhu] Kanal Stepper_Z, percobaan 9/10
+  Alarm terdeteksi. Suhu tercatat: 66 C, relayOn=True, device_epoch=1783945838
+
+[Suhu] Kanal Stepper_Z, percobaan 10/10
+  Alarm terdeteksi. Suhu tercatat: 66 C, relayOn=True, device_epoch=1783945850
+  Tersimpan: hasil_ambang_suhu.csv (20 baris)
+
+============================================================
+PENGUJIAN: Periode Pemantauan (observasi pasif 180 detik)
+============================================================
+Pastikan mesin dibiarkan menyala normal tanpa trigger apa pun selama ini.
+Jumlah sampel interval: 199, rata-rata: 2.000 detik
+Observasi dimulai (jam PC): 2026-07-13T19:31:01.006459
+  Tersimpan: hasil_periode_pemantauan.csv (199 baris)
+
+============================================================
+SELESAI. Total waktu: 17.1 menit
+Semua hasil tersimpan sebagai file CSV di folder ini:
+  - hasil_ambang_arus.csv
+  - hasil_ambang_suhu.csv
+  - hasil_periode_pemantauan.csv
+Untuk pengujian Penahanan sampai Reset (3 zona, timestamp presisi),
+jalankan skrip terpisah: uji_histeresis_otomatis.py
+============================================================
+(.venv) PS C:\Users\missk\Documents\vskode\CNCProject> python pengujian/uji_histeresis_otomatis.py
+Pastikan firmware sudah diupdate dengan command test_hold/test_clear,
+test_hold_temp/test_clear_temp, DAN timestamp epoch di log Serial
+(lihat diff_test_hold_firmware.patch versi terbaru) sebelum lanjut.
+
+Firmware sudah diupdate & mesin aman untuk diuji? (y/n): y
+
+File detail per-tahap akan ditulis langsung (append) ke:
+  - log_detail_histeresis_arus.csv
+  - log_detail_histeresis_suhu.csv
+Kalau mau mulai bersih, hapus dulu file ini sebelum menjalankan skrip.
+
+======================================================================
+UJI HISTERESIS END-TO-END ARUS (3 ZONA NILAI, OTOMATIS PENUH)
+======================================================================
+
+--- Kanal: Stepper_X (ambang=3.0A, resume<=2.5A) ---
+
+  Percobaan 1/5
+    [1] Tahan nilai 4.5A (di atas ambang alarm)
+        [checkpoint] pc=19:38:17 device_epoch_wib=2026-07-13 19:38:16 relayOn=True mesin_menyala=False
+    [2] Coba resume saat masih 4.5A (harus DITOLAK)
+        [checkpoint] pc=19:38:20 device_epoch_wib=2026-07-13 19:38:18 relayOn=True mesin_menyala=False
+    [3] Tahan nilai 2.8A (zona histeresis)
+        [checkpoint] pc=19:38:23 device_epoch_wib=2026-07-13 19:38:22 relayOn=True mesin_menyala=False
+    [4] Coba resume di zona histeresis (harus TETAP DITOLAK)
+        [checkpoint] pc=19:38:26 device_epoch_wib=2026-07-13 19:38:24 relayOn=True mesin_menyala=False
+    [5] Tahan nilai 2.2A (di bawah ambang resume)
+        [checkpoint] pc=19:38:29 device_epoch_wib=2026-07-13 19:38:28 relayOn=True mesin_menyala=False
+    [6] Coba resume di bawah ambang resume (harus DITERIMA)
+        [checkpoint] pc=19:38:32 device_epoch_wib=2026-07-13 19:38:30 relayOn=False mesin_menyala=True
+
+  Percobaan 2/5
+    [1] Tahan nilai 4.5A (di atas ambang alarm)
+        [checkpoint] pc=19:38:41 device_epoch_wib=2026-07-13 19:38:40 relayOn=True mesin_menyala=False
+    [2] Coba resume saat masih 4.5A (harus DITOLAK)
+        [checkpoint] pc=19:38:44 device_epoch_wib=2026-07-13 19:38:42 relayOn=True mesin_menyala=False
+    [3] Tahan nilai 2.8A (zona histeresis)
+        [checkpoint] pc=19:38:47 device_epoch_wib=2026-07-13 19:38:46 relayOn=True mesin_menyala=False
+    [4] Coba resume di zona histeresis (harus TETAP DITOLAK)
+        [checkpoint] pc=19:38:50 device_epoch_wib=2026-07-13 19:38:48 relayOn=True mesin_menyala=False
+    [5] Tahan nilai 2.2A (di bawah ambang resume)
+        [checkpoint] pc=19:38:53 device_epoch_wib=2026-07-13 19:38:52 relayOn=True mesin_menyala=False
+    [6] Coba resume di bawah ambang resume (harus DITERIMA)
+        [checkpoint] pc=19:38:56 device_epoch_wib=2026-07-13 19:38:54 relayOn=True mesin_menyala=False
+
+  Percobaan 3/5
+    [1] Tahan nilai 4.5A (di atas ambang alarm)
+        [checkpoint] pc=19:39:05 device_epoch_wib=2026-07-13 19:39:04 relayOn=True mesin_menyala=False
+    [2] Coba resume saat masih 4.5A (harus DITOLAK)
+        [checkpoint] pc=19:39:08 device_epoch_wib=2026-07-13 19:39:06 relayOn=True mesin_menyala=False
+    [3] Tahan nilai 2.8A (zona histeresis)
+        [checkpoint] pc=19:39:11 device_epoch_wib=2026-07-13 19:39:10 relayOn=True mesin_menyala=False
+    [4] Coba resume di zona histeresis (harus TETAP DITOLAK)
+        [checkpoint] pc=19:39:14 device_epoch_wib=2026-07-13 19:39:12 relayOn=True mesin_menyala=False
+    [5] Tahan nilai 2.2A (di bawah ambang resume)
+        [checkpoint] pc=19:39:17 device_epoch_wib=2026-07-13 19:39:16 relayOn=True mesin_menyala=False
+    [6] Coba resume di bawah ambang resume (harus DITERIMA)
+        [checkpoint] pc=19:39:20 device_epoch_wib=2026-07-13 19:39:20 relayOn=False mesin_menyala=True
+
+  Percobaan 4/5
+    [1] Tahan nilai 4.5A (di atas ambang alarm)
+        [checkpoint] pc=19:39:29 device_epoch_wib=2026-07-13 19:39:28 relayOn=True mesin_menyala=False
+    [2] Coba resume saat masih 4.5A (harus DITOLAK)
+        [checkpoint] pc=19:39:32 device_epoch_wib=2026-07-13 19:39:32 relayOn=True mesin_menyala=False
+    [3] Tahan nilai 2.8A (zona histeresis)
+        [checkpoint] pc=19:39:36 device_epoch_wib=2026-07-13 19:39:34 relayOn=True mesin_menyala=False
+    [4] Coba resume di zona histeresis (harus TETAP DITOLAK)
+        [checkpoint] pc=19:39:39 device_epoch_wib=2026-07-13 19:39:38 relayOn=True mesin_menyala=False
+    [5] Tahan nilai 2.2A (di bawah ambang resume)
+        [checkpoint] pc=19:39:42 device_epoch_wib=2026-07-13 19:39:40 relayOn=True mesin_menyala=False
+    [6] Coba resume di bawah ambang resume (harus DITERIMA)
+        [checkpoint] pc=19:39:45 device_epoch_wib=2026-07-13 19:39:44 relayOn=False mesin_menyala=True
+
+  Percobaan 5/5
+    [1] Tahan nilai 4.5A (di atas ambang alarm)
+        [checkpoint] pc=19:39:54 device_epoch_wib=2026-07-13 19:39:52 relayOn=True mesin_menyala=False
+    [2] Coba resume saat masih 4.5A (harus DITOLAK)
+        [checkpoint] pc=19:39:57 device_epoch_wib=2026-07-13 19:39:56 relayOn=True mesin_menyala=False
+    [3] Tahan nilai 2.8A (zona histeresis)
+        [checkpoint] pc=19:40:00 device_epoch_wib=2026-07-13 19:39:58 relayOn=True mesin_menyala=False
+    [4] Coba resume di zona histeresis (harus TETAP DITOLAK)
+        [checkpoint] pc=19:40:03 device_epoch_wib=2026-07-13 19:40:02 relayOn=True mesin_menyala=False
+    [5] Tahan nilai 2.2A (di bawah ambang resume)
+        [checkpoint] pc=19:40:06 device_epoch_wib=2026-07-13 19:40:04 relayOn=True mesin_menyala=False
+    [6] Coba resume di bawah ambang resume (harus DITERIMA)
+        [checkpoint] pc=19:40:09 device_epoch_wib=2026-07-13 19:40:08 relayOn=False mesin_menyala=True
+
+--- Kanal: Stepper_Y1 (ambang=3.0A, resume<=2.5A) ---
+
+  Percobaan 1/5
+    [1] Tahan nilai 4.5A (di atas ambang alarm)
+        [checkpoint] pc=19:40:18 device_epoch_wib=2026-07-13 19:40:16 relayOn=True mesin_menyala=False
+    [2] Coba resume saat masih 4.5A (harus DITOLAK)
+        [checkpoint] pc=19:40:21 device_epoch_wib=2026-07-13 19:40:20 relayOn=True mesin_menyala=False
+    [3] Tahan nilai 2.8A (zona histeresis)
+        [checkpoint] pc=19:40:24 device_epoch_wib=2026-07-13 19:40:22 relayOn=True mesin_menyala=False
+    [4] Coba resume di zona histeresis (harus TETAP DITOLAK)
+        [checkpoint] pc=19:40:27 device_epoch_wib=2026-07-13 19:40:26 relayOn=True mesin_menyala=False
+    [5] Tahan nilai 2.2A (di bawah ambang resume)
+        [checkpoint] pc=19:40:30 device_epoch_wib=2026-07-13 19:40:28 relayOn=True mesin_menyala=False
+    [6] Coba resume di bawah ambang resume (harus DITERIMA)
+        [checkpoint] pc=19:40:33 device_epoch_wib=2026-07-13 19:40:32 relayOn=False mesin_menyala=True
+
+  Percobaan 2/5
+    [1] Tahan nilai 4.5A (di atas ambang alarm)
+        [checkpoint] pc=19:40:42 device_epoch_wib=2026-07-13 19:40:40 relayOn=False mesin_menyala=True
+    [2] Coba resume saat masih 4.5A (harus DITOLAK)
+        [checkpoint] pc=19:40:45 device_epoch_wib=2026-07-13 19:40:44 relayOn=True mesin_menyala=False
+    [3] Tahan nilai 2.8A (zona histeresis)
+        [checkpoint] pc=19:40:48 device_epoch_wib=2026-07-13 19:40:46 relayOn=True mesin_menyala=False
+    [4] Coba resume di zona histeresis (harus TETAP DITOLAK)
+        [checkpoint] pc=19:40:51 device_epoch_wib=2026-07-13 19:40:50 relayOn=True mesin_menyala=False
+    [5] Tahan nilai 2.2A (di bawah ambang resume)
+        [checkpoint] pc=19:40:54 device_epoch_wib=2026-07-13 19:40:54 relayOn=True mesin_menyala=False
+    [6] Coba resume di bawah ambang resume (harus DITERIMA)
+        [checkpoint] pc=19:40:57 device_epoch_wib=2026-07-13 19:40:56 relayOn=False mesin_menyala=True
+
+  Percobaan 3/5
+    [1] Tahan nilai 4.5A (di atas ambang alarm)
+        [checkpoint] pc=19:41:06 device_epoch_wib=2026-07-13 19:41:06 relayOn=True mesin_menyala=False
+    [2] Coba resume saat masih 4.5A (harus DITOLAK)
+        [checkpoint] pc=19:41:10 device_epoch_wib=2026-07-13 19:41:08 relayOn=True mesin_menyala=False
+    [3] Tahan nilai 2.8A (zona histeresis)
+        [checkpoint] pc=19:41:13 device_epoch_wib=2026-07-13 19:41:12 relayOn=True mesin_menyala=False
+    [4] Coba resume di zona histeresis (harus TETAP DITOLAK)
+        [checkpoint] pc=19:41:16 device_epoch_wib=2026-07-13 19:41:14 relayOn=True mesin_menyala=False
+    [5] Tahan nilai 2.2A (di bawah ambang resume)
+        [checkpoint] pc=19:41:19 device_epoch_wib=2026-07-13 19:41:18 relayOn=True mesin_menyala=False
+    [6] Coba resume di bawah ambang resume (harus DITERIMA)
+        [checkpoint] pc=19:41:22 device_epoch_wib=2026-07-13 19:41:20 relayOn=False mesin_menyala=True
+
+  Percobaan 4/5
+    [1] Tahan nilai 4.5A (di atas ambang alarm)
+        [checkpoint] pc=19:41:31 device_epoch_wib=2026-07-13 19:41:30 relayOn=True mesin_menyala=False
+    [2] Coba resume saat masih 4.5A (harus DITOLAK)
+        [checkpoint] pc=19:41:34 device_epoch_wib=2026-07-13 19:41:32 relayOn=True mesin_menyala=False
+    [3] Tahan nilai 2.8A (zona histeresis)
+        [checkpoint] pc=19:41:37 device_epoch_wib=2026-07-13 19:41:36 relayOn=True mesin_menyala=False
+    [4] Coba resume di zona histeresis (harus TETAP DITOLAK)
+        [checkpoint] pc=19:41:40 device_epoch_wib=2026-07-13 19:41:38 relayOn=True mesin_menyala=False
+    [5] Tahan nilai 2.2A (di bawah ambang resume)
+        [checkpoint] pc=19:41:43 device_epoch_wib=2026-07-13 19:41:42 relayOn=True mesin_menyala=False
+    [6] Coba resume di bawah ambang resume (harus DITERIMA)
+        [checkpoint] pc=19:41:46 device_epoch_wib=2026-07-13 19:41:44 relayOn=False mesin_menyala=True
+
+  Percobaan 5/5
+    [1] Tahan nilai 4.5A (di atas ambang alarm)
+        [checkpoint] pc=19:41:55 device_epoch_wib=2026-07-13 19:41:54 relayOn=True mesin_menyala=False
+    [2] Coba resume saat masih 4.5A (harus DITOLAK)
+        [checkpoint] pc=19:41:58 device_epoch_wib=2026-07-13 19:41:56 relayOn=True mesin_menyala=False
+    [3] Tahan nilai 2.8A (zona histeresis)
+        [checkpoint] pc=19:42:01 device_epoch_wib=2026-07-13 19:42:00 relayOn=True mesin_menyala=False
+    [4] Coba resume di zona histeresis (harus TETAP DITOLAK)
+        [checkpoint] pc=19:42:04 device_epoch_wib=2026-07-13 19:42:02 relayOn=True mesin_menyala=False
+    [5] Tahan nilai 2.2A (di bawah ambang resume)
+        [checkpoint] pc=19:42:07 device_epoch_wib=2026-07-13 19:42:06 relayOn=True mesin_menyala=False
+    [6] Coba resume di bawah ambang resume (harus DITERIMA)
+        [checkpoint] pc=19:42:10 device_epoch_wib=2026-07-13 19:42:08 relayOn=True mesin_menyala=False
+
+--- Kanal: Stepper_Y2 (ambang=3.0A, resume<=2.5A) ---
+
+  Percobaan 1/5
+    [1] Tahan nilai 4.5A (di atas ambang alarm)
+        [checkpoint] pc=19:42:19 device_epoch_wib=2026-07-13 19:42:18 relayOn=True mesin_menyala=False
+    [2] Coba resume saat masih 4.5A (harus DITOLAK)
+        [checkpoint] pc=19:42:22 device_epoch_wib=2026-07-13 19:42:20 relayOn=True mesin_menyala=False
+    [3] Tahan nilai 2.8A (zona histeresis)
+        [checkpoint] pc=19:42:25 device_epoch_wib=2026-07-13 19:42:24 relayOn=True mesin_menyala=False
+    [4] Coba resume di zona histeresis (harus TETAP DITOLAK)
+        [checkpoint] pc=19:42:28 device_epoch_wib=2026-07-13 19:42:26 relayOn=True mesin_menyala=False
+    [5] Tahan nilai 2.2A (di bawah ambang resume)
+        [checkpoint] pc=19:42:31 device_epoch_wib=2026-07-13 19:42:30 relayOn=True mesin_menyala=False
+    [6] Coba resume di bawah ambang resume (harus DITERIMA)
+        [checkpoint] pc=19:42:34 device_epoch_wib=2026-07-13 19:42:32 relayOn=True mesin_menyala=False
+
+  Percobaan 2/5
+    [1] Tahan nilai 4.5A (di atas ambang alarm)
+        [checkpoint] pc=19:42:43 device_epoch_wib=2026-07-13 19:42:42 relayOn=True mesin_menyala=False
+    [2] Coba resume saat masih 4.5A (harus DITOLAK)
+        [checkpoint] pc=19:42:46 device_epoch_wib=2026-07-13 19:42:46 relayOn=True mesin_menyala=False
+    [3] Tahan nilai 2.8A (zona histeresis)
+        [checkpoint] pc=19:42:49 device_epoch_wib=2026-07-13 19:42:48 relayOn=True mesin_menyala=False
+    [4] Coba resume di zona histeresis (harus TETAP DITOLAK)
+        [checkpoint] pc=19:42:53 device_epoch_wib=2026-07-13 19:42:52 relayOn=True mesin_menyala=False
+    [5] Tahan nilai 2.2A (di bawah ambang resume)
+        [checkpoint] pc=19:42:56 device_epoch_wib=2026-07-13 19:42:54 relayOn=True mesin_menyala=False
+    [6] Coba resume di bawah ambang resume (harus DITERIMA)
+        [checkpoint] pc=19:42:59 device_epoch_wib=2026-07-13 19:42:58 relayOn=False mesin_menyala=True
+
+  Percobaan 3/5
+    [1] Tahan nilai 4.5A (di atas ambang alarm)
+        [checkpoint] pc=19:43:08 device_epoch_wib=2026-07-13 19:43:06 relayOn=True mesin_menyala=False
+    [2] Coba resume saat masih 4.5A (harus DITOLAK)
+        [checkpoint] pc=19:43:11 device_epoch_wib=2026-07-13 19:43:10 relayOn=True mesin_menyala=False
+    [3] Tahan nilai 2.8A (zona histeresis)
+        [checkpoint] pc=19:43:14 device_epoch_wib=2026-07-13 19:43:12 relayOn=True mesin_menyala=False
+    [4] Coba resume di zona histeresis (harus TETAP DITOLAK)
+        [checkpoint] pc=19:43:17 device_epoch_wib=2026-07-13 19:43:16 relayOn=True mesin_menyala=False
+    [5] Tahan nilai 2.2A (di bawah ambang resume)
+        [checkpoint] pc=19:43:20 device_epoch_wib=2026-07-13 19:43:18 relayOn=True mesin_menyala=False
+    [6] Coba resume di bawah ambang resume (harus DITERIMA)
+        [checkpoint] pc=19:43:23 device_epoch_wib=2026-07-13 19:43:22 relayOn=False mesin_menyala=True
+
+  Percobaan 4/5
+    [1] Tahan nilai 4.5A (di atas ambang alarm)
+        [checkpoint] pc=19:43:32 device_epoch_wib=2026-07-13 19:43:30 relayOn=True mesin_menyala=False
+    [2] Coba resume saat masih 4.5A (harus DITOLAK)
+        [checkpoint] pc=19:43:35 device_epoch_wib=2026-07-13 19:43:34 relayOn=True mesin_menyala=False
+    [3] Tahan nilai 2.8A (zona histeresis)
+        [checkpoint] pc=19:43:38 device_epoch_wib=2026-07-13 19:43:36 relayOn=True mesin_menyala=False
+    [4] Coba resume di zona histeresis (harus TETAP DITOLAK)
+        [checkpoint] pc=19:43:41 device_epoch_wib=2026-07-13 19:43:40 relayOn=True mesin_menyala=False
+    [5] Tahan nilai 2.2A (di bawah ambang resume)
+        [checkpoint] pc=19:43:44 device_epoch_wib=2026-07-13 19:43:42 relayOn=True mesin_menyala=False
+    [6] Coba resume di bawah ambang resume (harus DITERIMA)
+        [checkpoint] pc=19:43:47 device_epoch_wib=2026-07-13 19:43:46 relayOn=False mesin_menyala=True
+
+  Percobaan 5/5
+    [1] Tahan nilai 4.5A (di atas ambang alarm)
+        [checkpoint] pc=19:43:56 device_epoch_wib=2026-07-13 19:43:54 relayOn=False mesin_menyala=True
+    [2] Coba resume saat masih 4.5A (harus DITOLAK)
+        [checkpoint] pc=19:43:59 device_epoch_wib=2026-07-13 19:43:58 relayOn=True mesin_menyala=False
+    [3] Tahan nilai 2.8A (zona histeresis)
+        [checkpoint] pc=19:44:02 device_epoch_wib=2026-07-13 19:44:00 relayOn=True mesin_menyala=False
+    [4] Coba resume di zona histeresis (harus TETAP DITOLAK)
+        [checkpoint] pc=19:44:05 device_epoch_wib=2026-07-13 19:44:04 relayOn=True mesin_menyala=False
+    [5] Tahan nilai 2.2A (di bawah ambang resume)
+        [checkpoint] pc=19:44:08 device_epoch_wib=2026-07-13 19:44:08 relayOn=True mesin_menyala=False
+    [6] Coba resume di bawah ambang resume (harus DITERIMA)
+        [checkpoint] pc=19:44:11 device_epoch_wib=2026-07-13 19:44:10 relayOn=False mesin_menyala=True
+
+--- Kanal: Stepper_Z (ambang=2.0A, resume<=1.5A) ---
+
+  Percobaan 1/5
+    [1] Tahan nilai 3.0A (di atas ambang alarm)
+        [checkpoint] pc=19:44:20 device_epoch_wib=2026-07-13 19:44:20 relayOn=True mesin_menyala=False
+    [2] Coba resume saat masih 3.0A (harus DITOLAK)
+        [checkpoint] pc=19:44:23 device_epoch_wib=2026-07-13 19:44:22 relayOn=True mesin_menyala=False
+    [3] Tahan nilai 1.8A (zona histeresis)
+        [checkpoint] pc=19:44:27 device_epoch_wib=2026-07-13 19:44:26 relayOn=True mesin_menyala=False
+    [4] Coba resume di zona histeresis (harus TETAP DITOLAK)
+        [checkpoint] pc=19:44:30 device_epoch_wib=2026-07-13 19:44:28 relayOn=True mesin_menyala=False
+    [5] Tahan nilai 1.2A (di bawah ambang resume)
+        [checkpoint] pc=19:44:33 device_epoch_wib=2026-07-13 19:44:32 relayOn=True mesin_menyala=False
+    [6] Coba resume di bawah ambang resume (harus DITERIMA)
+        [checkpoint] pc=19:44:36 device_epoch_wib=2026-07-13 19:44:34 relayOn=False mesin_menyala=True
+
+  Percobaan 2/5
+    [1] Tahan nilai 3.0A (di atas ambang alarm)
+        [checkpoint] pc=19:44:45 device_epoch_wib=2026-07-13 19:44:44 relayOn=True mesin_menyala=False
+    [2] Coba resume saat masih 3.0A (harus DITOLAK)
+        [checkpoint] pc=19:44:48 device_epoch_wib=2026-07-13 19:44:46 relayOn=True mesin_menyala=False
+    [3] Tahan nilai 1.8A (zona histeresis)
+        [checkpoint] pc=19:44:51 device_epoch_wib=2026-07-13 19:44:50 relayOn=True mesin_menyala=False
+    [4] Coba resume di zona histeresis (harus TETAP DITOLAK)
+        [checkpoint] pc=19:44:54 device_epoch_wib=2026-07-13 19:44:52 relayOn=True mesin_menyala=False
+    [5] Tahan nilai 1.2A (di bawah ambang resume)
+        [checkpoint] pc=19:44:57 device_epoch_wib=2026-07-13 19:44:56 relayOn=True mesin_menyala=False
+    [6] Coba resume di bawah ambang resume (harus DITERIMA)
+        [checkpoint] pc=19:45:00 device_epoch_wib=2026-07-13 19:44:58 relayOn=False mesin_menyala=True
+
+  Percobaan 3/5
+    [1] Tahan nilai 3.0A (di atas ambang alarm)
+        [checkpoint] pc=19:45:09 device_epoch_wib=2026-07-13 19:45:08 relayOn=True mesin_menyala=False
+    [2] Coba resume saat masih 3.0A (harus DITOLAK)
+        [checkpoint] pc=19:45:12 device_epoch_wib=2026-07-13 19:45:10 relayOn=True mesin_menyala=False
+    [3] Tahan nilai 1.8A (zona histeresis)
+        [checkpoint] pc=19:45:15 device_epoch_wib=2026-07-13 19:45:14 relayOn=True mesin_menyala=False
+    [4] Coba resume di zona histeresis (harus TETAP DITOLAK)
+        [checkpoint] pc=19:45:18 device_epoch_wib=2026-07-13 19:45:16 relayOn=True mesin_menyala=False
+    [5] Tahan nilai 1.2A (di bawah ambang resume)
+        [checkpoint] pc=19:45:21 device_epoch_wib=2026-07-13 19:45:20 relayOn=True mesin_menyala=False
+    [6] Coba resume di bawah ambang resume (harus DITERIMA)
+        [checkpoint] pc=19:45:24 device_epoch_wib=2026-07-13 19:45:22 relayOn=True mesin_menyala=False
+
+  Percobaan 4/5
+    [1] Tahan nilai 3.0A (di atas ambang alarm)
+        [checkpoint] pc=19:45:33 device_epoch_wib=2026-07-13 19:45:32 relayOn=True mesin_menyala=False
+    [2] Coba resume saat masih 3.0A (harus DITOLAK)
+        [checkpoint] pc=19:45:36 device_epoch_wib=2026-07-13 19:45:34 relayOn=True mesin_menyala=False
+    [3] Tahan nilai 1.8A (zona histeresis)
+        [checkpoint] pc=19:45:39 device_epoch_wib=2026-07-13 19:45:38 relayOn=True mesin_menyala=False
+    [4] Coba resume di zona histeresis (harus TETAP DITOLAK)
+        [checkpoint] pc=19:45:42 device_epoch_wib=2026-07-13 19:45:42 relayOn=True mesin_menyala=False
+    [5] Tahan nilai 1.2A (di bawah ambang resume)
+        [checkpoint] pc=19:45:45 device_epoch_wib=2026-07-13 19:45:44 relayOn=True mesin_menyala=False
+    [6] Coba resume di bawah ambang resume (harus DITERIMA)
+        [checkpoint] pc=19:45:48 device_epoch_wib=2026-07-13 19:45:48 relayOn=False mesin_menyala=True
+
+  Percobaan 5/5
+    [1] Tahan nilai 3.0A (di atas ambang alarm)
+        [checkpoint] pc=19:45:57 device_epoch_wib=2026-07-13 19:45:56 relayOn=True mesin_menyala=False
+    [2] Coba resume saat masih 3.0A (harus DITOLAK)
+        [checkpoint] pc=19:46:01 device_epoch_wib=2026-07-13 19:46:00 relayOn=True mesin_menyala=False
+    [3] Tahan nilai 1.8A (zona histeresis)
+        [checkpoint] pc=19:46:04 device_epoch_wib=2026-07-13 19:46:02 relayOn=True mesin_menyala=False
+    [4] Coba resume di zona histeresis (harus TETAP DITOLAK)
+        [checkpoint] pc=19:46:07 device_epoch_wib=2026-07-13 19:46:06 relayOn=True mesin_menyala=False
+    [5] Tahan nilai 1.2A (di bawah ambang resume)
+        [checkpoint] pc=19:46:10 device_epoch_wib=2026-07-13 19:46:08 relayOn=True mesin_menyala=False
+    [6] Coba resume di bawah ambang resume (harus DITERIMA)
+        [checkpoint] pc=19:46:13 device_epoch_wib=2026-07-13 19:46:12 relayOn=False mesin_menyala=True
+
+--- Kanal: Spindle (ambang=3.0A, resume<=2.5A) ---
+
+  Percobaan 1/5
+    [1] Tahan nilai 4.5A (di atas ambang alarm)
+        [checkpoint] pc=19:46:22 device_epoch_wib=2026-07-13 19:46:20 relayOn=True mesin_menyala=False
+    [2] Coba resume saat masih 4.5A (harus DITOLAK)
+        [checkpoint] pc=19:46:25 device_epoch_wib=2026-07-13 19:46:24 relayOn=True mesin_menyala=False
+    [3] Tahan nilai 2.8A (zona histeresis)
+        [checkpoint] pc=19:46:28 device_epoch_wib=2026-07-13 19:46:26 relayOn=True mesin_menyala=False
+    [4] Coba resume di zona histeresis (harus TETAP DITOLAK)
+        [checkpoint] pc=19:46:31 device_epoch_wib=2026-07-13 19:46:30 relayOn=True mesin_menyala=False
+    [5] Tahan nilai 2.2A (di bawah ambang resume)
+        [checkpoint] pc=19:46:34 device_epoch_wib=2026-07-13 19:46:32 relayOn=True mesin_menyala=False
+    [6] Coba resume di bawah ambang resume (harus DITERIMA)
+        [checkpoint] pc=19:46:37 device_epoch_wib=2026-07-13 19:46:36 relayOn=False mesin_menyala=True
+
+  Percobaan 2/5
+    [1] Tahan nilai 4.5A (di atas ambang alarm)
+        [checkpoint] pc=19:46:46 device_epoch_wib=2026-07-13 19:46:44 relayOn=False mesin_menyala=True
+    [2] Coba resume saat masih 4.5A (harus DITOLAK)
+        [checkpoint] pc=19:46:49 device_epoch_wib=2026-07-13 19:46:48 relayOn=True mesin_menyala=False
+    [3] Tahan nilai 2.8A (zona histeresis)
+        [checkpoint] pc=19:46:52 device_epoch_wib=2026-07-13 19:46:50 relayOn=True mesin_menyala=False
+    [4] Coba resume di zona histeresis (harus TETAP DITOLAK)
+        [checkpoint] pc=19:46:55 device_epoch_wib=2026-07-13 19:46:54 relayOn=True mesin_menyala=False
+    [5] Tahan nilai 2.2A (di bawah ambang resume)
+        [checkpoint] pc=19:46:58 device_epoch_wib=2026-07-13 19:46:56 relayOn=True mesin_menyala=False
+    [6] Coba resume di bawah ambang resume (harus DITERIMA)
+        [checkpoint] pc=19:47:01 device_epoch_wib=2026-07-13 19:47:00 relayOn=False mesin_menyala=True
+
+  Percobaan 3/5
+    [1] Tahan nilai 4.5A (di atas ambang alarm)
+        [checkpoint] pc=19:47:10 device_epoch_wib=2026-07-13 19:47:10 relayOn=True mesin_menyala=False
+    [2] Coba resume saat masih 4.5A (harus DITOLAK)
+        [checkpoint] pc=19:47:13 device_epoch_wib=2026-07-13 19:47:12 relayOn=True mesin_menyala=False
+    [3] Tahan nilai 2.8A (zona histeresis)
+        [checkpoint] pc=19:47:16 device_epoch_wib=2026-07-13 19:47:16 relayOn=True mesin_menyala=False
+    [4] Coba resume di zona histeresis (harus TETAP DITOLAK)
+        [checkpoint] pc=19:47:19 device_epoch_wib=2026-07-13 19:47:18 relayOn=True mesin_menyala=False
+    [5] Tahan nilai 2.2A (di bawah ambang resume)
+        [checkpoint] pc=19:47:23 device_epoch_wib=2026-07-13 19:47:22 relayOn=True mesin_menyala=False
+    [6] Coba resume di bawah ambang resume (harus DITERIMA)
+        [checkpoint] pc=19:47:26 device_epoch_wib=2026-07-13 19:47:24 relayOn=False mesin_menyala=True
+
+  Percobaan 4/5
+    [1] Tahan nilai 4.5A (di atas ambang alarm)
+        [checkpoint] pc=19:47:35 device_epoch_wib=2026-07-13 19:47:34 relayOn=True mesin_menyala=False
+    [2] Coba resume saat masih 4.5A (harus DITOLAK)
+        [checkpoint] pc=19:47:38 device_epoch_wib=2026-07-13 19:47:36 relayOn=True mesin_menyala=False
+    [3] Tahan nilai 2.8A (zona histeresis)
+        [checkpoint] pc=19:47:41 device_epoch_wib=2026-07-13 19:47:40 relayOn=True mesin_menyala=False
+    [4] Coba resume di zona histeresis (harus TETAP DITOLAK)
+        [checkpoint] pc=19:47:44 device_epoch_wib=2026-07-13 19:47:42 relayOn=True mesin_menyala=False
+    [5] Tahan nilai 2.2A (di bawah ambang resume)
+        [checkpoint] pc=19:47:47 device_epoch_wib=2026-07-13 19:47:46 relayOn=True mesin_menyala=False
+    [6] Coba resume di bawah ambang resume (harus DITERIMA)
+        [checkpoint] pc=19:47:50 device_epoch_wib=2026-07-13 19:47:48 relayOn=False mesin_menyala=True
+
+  Percobaan 5/5
+    [1] Tahan nilai 4.5A (di atas ambang alarm)
+        [checkpoint] pc=19:47:59 device_epoch_wib=2026-07-13 19:47:58 relayOn=True mesin_menyala=False
+    [2] Coba resume saat masih 4.5A (harus DITOLAK)
+        [checkpoint] pc=19:48:02 device_epoch_wib=2026-07-13 19:48:00 relayOn=True mesin_menyala=False
+    [3] Tahan nilai 2.8A (zona histeresis)
+        [checkpoint] pc=19:48:05 device_epoch_wib=2026-07-13 19:48:04 relayOn=True mesin_menyala=False
+    [4] Coba resume di zona histeresis (harus TETAP DITOLAK)
+        [checkpoint] pc=19:48:08 device_epoch_wib=2026-07-13 19:48:06 relayOn=True mesin_menyala=False
+    [5] Tahan nilai 2.2A (di bawah ambang resume)
+        [checkpoint] pc=19:48:11 device_epoch_wib=2026-07-13 19:48:10 relayOn=True mesin_menyala=False
+    [6] Coba resume di bawah ambang resume (harus DITERIMA)
+        [checkpoint] pc=19:48:14 device_epoch_wib=2026-07-13 19:48:12 relayOn=True mesin_menyala=False
+  Tersimpan: hasil_histeresis_end_to_end.csv (25 baris)
+
+======================================================================
+RINGKASAN A: 17/25 percobaan sesuai ekspektasi penuh
+Detail lengkap tiap tahap (dengan waktu): log_detail_histeresis_arus.csv
+======================================================================
+======================================================================
+UJI HISTERESIS END-TO-END SUHU (3 ZONA NILAI, OTOMATIS PENUH)
+======================================================================
+
+--- Kanal: Spindle (ambang=60.0C, resume<=55.0C) ---
+
+  Percobaan 1/5
+    [1] Tahan nilai 72.0C (di atas ambang alarm)
+        [checkpoint] pc=19:48:23 device_epoch_wib=2026-07-13 19:48:22 relayOn=True mesin_menyala=False
+    [2] Coba resume saat masih 72.0C (harus DITOLAK)
+        [checkpoint] pc=19:48:26 device_epoch_wib=2026-07-13 19:48:24 relayOn=True mesin_menyala=False
+    [3] Tahan nilai 58.0C (zona histeresis)
+        [checkpoint] pc=19:48:29 device_epoch_wib=2026-07-13 19:48:28 relayOn=True mesin_menyala=False
+    [4] Coba resume di zona histeresis (harus TETAP DITOLAK)
+        [checkpoint] pc=19:48:32 device_epoch_wib=2026-07-13 19:48:30 relayOn=True mesin_menyala=False
+    [5] Tahan nilai 52.0C (di bawah ambang resume)
+        [checkpoint] pc=19:48:35 device_epoch_wib=2026-07-13 19:48:34 relayOn=True mesin_menyala=False
+    [6] Coba resume di bawah ambang resume (harus DITERIMA)
+        [checkpoint] pc=19:48:38 device_epoch_wib=2026-07-13 19:48:38 relayOn=False mesin_menyala=True
+
+  Percobaan 2/5
+    [1] Tahan nilai 72.0C (di atas ambang alarm)
+        [checkpoint] pc=19:48:47 device_epoch_wib=2026-07-13 19:48:46 relayOn=True mesin_menyala=False
+    [2] Coba resume saat masih 72.0C (harus DITOLAK)
+        [checkpoint] pc=19:48:50 device_epoch_wib=2026-07-13 19:48:50 relayOn=True mesin_menyala=False
+    [3] Tahan nilai 58.0C (zona histeresis)
+        [checkpoint] pc=19:48:53 device_epoch_wib=2026-07-13 19:48:52 relayOn=True mesin_menyala=False
+    [4] Coba resume di zona histeresis (harus TETAP DITOLAK)
+        [checkpoint] pc=19:48:57 device_epoch_wib=2026-07-13 19:48:56 relayOn=True mesin_menyala=False
+    [5] Tahan nilai 52.0C (di bawah ambang resume)
+        [checkpoint] pc=19:49:00 device_epoch_wib=2026-07-13 19:48:58 relayOn=True mesin_menyala=False
+    [6] Coba resume di bawah ambang resume (harus DITERIMA)
+        [checkpoint] pc=19:49:03 device_epoch_wib=2026-07-13 19:49:02 relayOn=False mesin_menyala=True
+
+  Percobaan 3/5
+    [1] Tahan nilai 72.0C (di atas ambang alarm)
+        [checkpoint] pc=19:49:12 device_epoch_wib=2026-07-13 19:49:10 relayOn=True mesin_menyala=False
+    [2] Coba resume saat masih 72.0C (harus DITOLAK)
+        [checkpoint] pc=19:49:15 device_epoch_wib=2026-07-13 19:49:14 relayOn=True mesin_menyala=False
+    [3] Tahan nilai 58.0C (zona histeresis)
+        [checkpoint] pc=19:49:18 device_epoch_wib=2026-07-13 19:49:16 relayOn=True mesin_menyala=False
+    [4] Coba resume di zona histeresis (harus TETAP DITOLAK)
+        [checkpoint] pc=19:49:21 device_epoch_wib=2026-07-13 19:49:20 relayOn=True mesin_menyala=False
+    [5] Tahan nilai 52.0C (di bawah ambang resume)
+        [checkpoint] pc=19:49:24 device_epoch_wib=2026-07-13 19:49:22 relayOn=True mesin_menyala=False
+    [6] Coba resume di bawah ambang resume (harus DITERIMA)
+        [checkpoint] pc=19:49:27 device_epoch_wib=2026-07-13 19:49:26 relayOn=False mesin_menyala=True
+
+  Percobaan 4/5
+    [1] Tahan nilai 72.0C (di atas ambang alarm)
+        [checkpoint] pc=19:49:36 device_epoch_wib=2026-07-13 19:49:34 relayOn=False mesin_menyala=True
+    [2] Coba resume saat masih 72.0C (harus DITOLAK)
+        [checkpoint] pc=19:49:39 device_epoch_wib=2026-07-13 19:49:38 relayOn=True mesin_menyala=False
+    [3] Tahan nilai 58.0C (zona histeresis)
+        [checkpoint] pc=19:49:42 device_epoch_wib=2026-07-13 19:49:40 relayOn=True mesin_menyala=False
+    [4] Coba resume di zona histeresis (harus TETAP DITOLAK)
+        [checkpoint] pc=19:49:45 device_epoch_wib=2026-07-13 19:49:44 relayOn=True mesin_menyala=False
+    [5] Tahan nilai 52.0C (di bawah ambang resume)
+        [checkpoint] pc=19:49:48 device_epoch_wib=2026-07-13 19:49:46 relayOn=True mesin_menyala=False
+    [6] Coba resume di bawah ambang resume (harus DITERIMA)
+        [checkpoint] pc=19:49:51 device_epoch_wib=2026-07-13 19:49:50 relayOn=False mesin_menyala=True
+
+  Percobaan 5/5
+    [1] Tahan nilai 72.0C (di atas ambang alarm)
+        [checkpoint] pc=19:50:00 device_epoch_wib=2026-07-13 19:49:58 relayOn=False mesin_menyala=True
+    [2] Coba resume saat masih 72.0C (harus DITOLAK)
+        [checkpoint] pc=19:50:03 device_epoch_wib=2026-07-13 19:50:02 relayOn=True mesin_menyala=False
+    [3] Tahan nilai 58.0C (zona histeresis)
+        [checkpoint] pc=19:50:06 device_epoch_wib=2026-07-13 19:50:04 relayOn=True mesin_menyala=False
+    [4] Coba resume di zona histeresis (harus TETAP DITOLAK)
+        [checkpoint] pc=19:50:09 device_epoch_wib=2026-07-13 19:50:08 relayOn=True mesin_menyala=False
+    [5] Tahan nilai 52.0C (di bawah ambang resume)
+        [checkpoint] pc=19:50:12 device_epoch_wib=2026-07-13 19:50:10 relayOn=True mesin_menyala=False
+    [6] Coba resume di bawah ambang resume (harus DITERIMA)
+        [checkpoint] pc=19:50:15 device_epoch_wib=2026-07-13 19:50:14 relayOn=False mesin_menyala=True
+
+--- Kanal: Stepper_Z (ambang=55.0C, resume<=50.0C) ---
+
+  Percobaan 1/5
+    [1] Tahan nilai 66.0C (di atas ambang alarm)
+        [checkpoint] pc=19:50:24 device_epoch_wib=2026-07-13 19:50:24 relayOn=True mesin_menyala=False
+    [2] Coba resume saat masih 66.0C (harus DITOLAK)
+        [checkpoint] pc=19:50:27 device_epoch_wib=2026-07-13 19:50:26 relayOn=True mesin_menyala=False
+    [3] Tahan nilai 53.0C (zona histeresis)
+        [checkpoint] pc=19:50:30 device_epoch_wib=2026-07-13 19:50:30 relayOn=True mesin_menyala=False
+    [4] Coba resume di zona histeresis (harus TETAP DITOLAK)
+        [checkpoint] pc=19:50:33 device_epoch_wib=2026-07-13 19:50:32 relayOn=True mesin_menyala=False
+    [5] Tahan nilai 47.0C (di bawah ambang resume)
+        [checkpoint] pc=19:50:36 device_epoch_wib=2026-07-13 19:50:36 relayOn=True mesin_menyala=False
+    [6] Coba resume di bawah ambang resume (harus DITERIMA)
+        [checkpoint] pc=19:50:39 device_epoch_wib=2026-07-13 19:50:38 relayOn=False mesin_menyala=True
+
+  Percobaan 2/5
+    [1] Tahan nilai 66.0C (di atas ambang alarm)
+        [checkpoint] pc=19:50:49 device_epoch_wib=2026-07-13 19:50:48 relayOn=True mesin_menyala=False
+    [2] Coba resume saat masih 66.0C (harus DITOLAK)
+        [checkpoint] pc=19:50:52 device_epoch_wib=2026-07-13 19:50:50 relayOn=True mesin_menyala=False
+    [3] Tahan nilai 53.0C (zona histeresis)
+        [checkpoint] pc=19:50:55 device_epoch_wib=2026-07-13 19:50:54 relayOn=True mesin_menyala=False
+    [4] Coba resume di zona histeresis (harus TETAP DITOLAK)
+        [checkpoint] pc=19:50:58 device_epoch_wib=2026-07-13 19:50:56 relayOn=True mesin_menyala=False
+    [5] Tahan nilai 47.0C (di bawah ambang resume)
+        [checkpoint] pc=19:51:01 device_epoch_wib=2026-07-13 19:51:00 relayOn=True mesin_menyala=False
+    [6] Coba resume di bawah ambang resume (harus DITERIMA)
+        [checkpoint] pc=19:51:04 device_epoch_wib=2026-07-13 19:51:02 relayOn=False mesin_menyala=True
+
+  Percobaan 3/5
+    [1] Tahan nilai 66.0C (di atas ambang alarm)
+        [checkpoint] pc=19:51:13 device_epoch_wib=2026-07-13 19:51:12 relayOn=True mesin_menyala=False
+    [2] Coba resume saat masih 66.0C (harus DITOLAK)
+        [checkpoint] pc=19:51:16 device_epoch_wib=2026-07-13 19:51:14 relayOn=True mesin_menyala=False
+    [3] Tahan nilai 53.0C (zona histeresis)
+        [checkpoint] pc=19:51:19 device_epoch_wib=2026-07-13 19:51:18 relayOn=True mesin_menyala=False
+    [4] Coba resume di zona histeresis (harus TETAP DITOLAK)
+        [checkpoint] pc=19:51:22 device_epoch_wib=2026-07-13 19:51:20 relayOn=True mesin_menyala=False
+    [5] Tahan nilai 47.0C (di bawah ambang resume)
+        [checkpoint] pc=19:51:25 device_epoch_wib=2026-07-13 19:51:24 relayOn=True mesin_menyala=False
+    [6] Coba resume di bawah ambang resume (harus DITERIMA)
+        [checkpoint] pc=19:51:28 device_epoch_wib=2026-07-13 19:51:26 relayOn=False mesin_menyala=True
+
+  Percobaan 4/5
+    [1] Tahan nilai 66.0C (di atas ambang alarm)
+        [checkpoint] pc=19:51:37 device_epoch_wib=2026-07-13 19:51:36 relayOn=True mesin_menyala=False
+    [2] Coba resume saat masih 66.0C (harus DITOLAK)
+        [checkpoint] pc=19:51:40 device_epoch_wib=2026-07-13 19:51:38 relayOn=True mesin_menyala=False
+    [3] Tahan nilai 53.0C (zona histeresis)
+        [checkpoint] pc=19:51:43 device_epoch_wib=2026-07-13 19:51:42 relayOn=True mesin_menyala=False
+    [4] Coba resume di zona histeresis (harus TETAP DITOLAK)
+        [checkpoint] pc=19:51:46 device_epoch_wib=2026-07-13 19:51:44 relayOn=True mesin_menyala=False
+    [5] Tahan nilai 47.0C (di bawah ambang resume)
+        [checkpoint] pc=19:51:49 device_epoch_wib=2026-07-13 19:51:48 relayOn=True mesin_menyala=False
+    [6] Coba resume di bawah ambang resume (harus DITERIMA)
+        [checkpoint] pc=19:51:52 device_epoch_wib=2026-07-13 19:51:50 relayOn=True mesin_menyala=False
+
+  Percobaan 5/5
+    [1] Tahan nilai 66.0C (di atas ambang alarm)
+        [checkpoint] pc=19:52:01 device_epoch_wib=2026-07-13 19:52:00 relayOn=True mesin_menyala=False
+    [2] Coba resume saat masih 66.0C (harus DITOLAK)
+        [checkpoint] pc=19:52:04 device_epoch_wib=2026-07-13 19:52:04 relayOn=True mesin_menyala=False
+    [3] Tahan nilai 53.0C (zona histeresis)
+        [checkpoint] pc=19:52:07 device_epoch_wib=2026-07-13 19:52:06 relayOn=True mesin_menyala=False
+    [4] Coba resume di zona histeresis (harus TETAP DITOLAK)
+        [checkpoint] pc=19:52:10 device_epoch_wib=2026-07-13 19:52:10 relayOn=True mesin_menyala=False
+    [5] Tahan nilai 47.0C (di bawah ambang resume)
+        [checkpoint] pc=19:52:13 device_epoch_wib=2026-07-13 19:52:12 relayOn=True mesin_menyala=False
+    [6] Coba resume di bawah ambang resume (harus DITERIMA)
+        [checkpoint] pc=19:52:16 device_epoch_wib=2026-07-13 19:52:16 relayOn=False mesin_menyala=True
+  Tersimpan: hasil_histeresis_suhu_end_to_end.csv (10 baris)
+
+======================================================================
+RINGKASAN C: 7/10 percobaan sesuai ekspektasi penuh
+Detail lengkap tiap tahap (dengan waktu): log_detail_histeresis_suhu.csv
+======================================================================
+
+Total waktu: 14.1 menit
+(.venv) PS C:\Users\missk\Documents\vskode\CNCProject> 
+
+

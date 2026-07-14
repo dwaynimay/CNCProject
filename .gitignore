@@ -70,14 +70,7 @@ test.json
 .impeccable/
 
 # Database & runtime data
-server/backend/data/
-server/backend/data_pengujian_ditelkom/
-*.db
-*.sqlite
-*.sqlite3
 
-# Hasil pengujian
-hasil_histeresis*.csv
 
 # Analysis artifacts
 firmware_analysis.md
