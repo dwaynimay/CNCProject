@@ -48,6 +48,18 @@ db.exec(`
   );
 
   CREATE INDEX IF NOT EXISTS idx_selftest_device ON selftest_results(device_id);
+
+  CREATE TABLE IF NOT EXISTS alerts_log (
+    id          INTEGER PRIMARY KEY AUTOINCREMENT,
+    device_id   TEXT NOT NULL,
+    alert_type  TEXT NOT NULL,
+    severity    TEXT NOT NULL,
+    message     TEXT NOT NULL,
+    recorded_at DATETIME DEFAULT (datetime('now', 'localtime'))
+  );
+
+  CREATE INDEX IF NOT EXISTS idx_alerts_device ON alerts_log(device_id);
+  CREATE INDEX IF NOT EXISTS idx_alerts_time   ON alerts_log(recorded_at);
 `);
 
 console.log(`[DB] ✓ SQLite terhubung: ${DB_PATH}`);
@@ -105,6 +117,29 @@ function getSelfTestHistory(deviceId, limit = 20) {
     }));
 }
 
+/** Simpan satu alert (alertEngine) */
+const stmtLogAlert = db.prepare(
+    'INSERT INTO alerts_log (device_id, alert_type, severity, message) VALUES (?, ?, ?, ?)'
+);
+function logAlert(deviceId, alertType, severity, message) {
+    return stmtLogAlert.run(deviceId, alertType, severity, message);
+}
+
+/** Ambil histori alert terbaru (default 50 baris) */
+const stmtGetAlerts = db.prepare(
+    'SELECT id, device_id, alert_type, severity, message, recorded_at FROM alerts_log WHERE device_id = ? ORDER BY recorded_at DESC LIMIT ?'
+);
+function getAlerts(deviceId, limit = 50) {
+    return stmtGetAlerts.all(deviceId, limit).map(row => ({
+        id:         row.id,
+        deviceId:   row.device_id,
+        alertType:  row.alert_type,
+        severity:   row.severity,
+        message:    row.message,
+        recordedAt: row.recorded_at,
+    }));
+}
+
 module.exports = {
     db,
     insertTelemetry,
@@ -112,4 +147,6 @@ module.exports = {
     logCommand,
     insertSelfTestResult,
     getSelfTestHistory,
+    logAlert,
+    getAlerts,
 };

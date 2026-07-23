@@ -3,6 +3,7 @@ const express    = require('express');
 const cors       = require('cors');
 const { WebSocketServer } = require('ws');
 const mqttSvc    = require('./services/mqttService');
+const alertEngine = require('./services/alertEngine');
 const apiRoutes  = require('./routes/api');
 
 
@@ -28,3 +29,6 @@ wss.on('listening', () => console.log(`[WS] WebSocket running on :${WS}`));
 
 // Mulai MQTT bridge
 mqttSvc.start(wss);
+
+// Mulai pemantau device offline untuk alert Telegram
+alertEngine.startOfflineWatcher();

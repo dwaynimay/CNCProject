@@ -70,6 +70,8 @@ test.json
 .impeccable/
 
 # Database & runtime data
+*.db-shm
+*.db-wal
 
 
 # Analysis artifacts

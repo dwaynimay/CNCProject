@@ -1,6 +1,8 @@
-const router  = require('express').Router();
-const mqttSvc = require('../services/mqttService');
-const { getHistory, getSelfTestHistory } = require('../db');
+const router      = require('express').Router();
+const mqttSvc     = require('../services/mqttService');
+const telegram    = require('../services/telegramService');
+const alertEngine = require('../services/alertEngine');
+const { getHistory, getSelfTestHistory, getAlerts } = require('../db');
 
 // GET  /api/latest/:id?  — data terbaru per device (live, dari memori)
 router.get('/latest/:id?', (req, res) => {
@@ -22,6 +24,9 @@ router.post('/command/:id', (req, res) => {
     const { id }  = req.params;
     const { cmd } = req.body;
     if (!cmd) return res.status(400).json({ error: 'cmd required' });
+    if (cmd === 'relay_on' || cmd === 'relay_off') {
+        alertEngine.markManualCommand(id, cmd);
+    }
     mqttSvc.sendCommand(id, cmd, 'dashboard');
     res.json({ ok: true, sent: cmd });
 });
@@ -64,6 +69,29 @@ router.get('/selftest/:id', (req, res) => {
     const limit   = Math.min(parseInt(req.query.limit) || 20, 200);
     const rows    = getSelfTestHistory(id, limit);
     res.json({ deviceId: id, count: rows.length, data: rows });
+});
+
+// GET  /api/alerts/:id — histori alert dari database
+// Query: ?limit=50
+router.get('/alerts/:id', (req, res) => {
+    const { id }  = req.params;
+    const limit   = Math.min(parseInt(req.query.limit) || 50, 500);
+    const rows    = getAlerts(id, limit);
+    res.json({ deviceId: id, count: rows.length, data: rows });
+});
+
+// POST /api/test-alert — kirim pesan tes ke Telegram
+router.post('/test-alert', async (req, res) => {
+    if (!telegram.isConfigured()) {
+        return res.status(400).json({
+            ok:    false,
+            error: 'Telegram belum dikonfigurasi. Set TELEGRAM_ENABLED, TELEGRAM_BOT_TOKEN, dan TELEGRAM_CHAT_ID di .env',
+        });
+    }
+    const text   = req.body?.text || '✅ *Tes Koneksi*\nNotifikasi Telegram CNC IoT Monitor aktif.';
+    const result = await telegram.sendMessage(text);
+    if (result.ok) res.json({ ok: true, sent: text });
+    else           res.status(502).json({ ok: false, error: result.error || 'gagal kirim' });
 });
 
 module.exports = router;

@@ -1,6 +1,7 @@
 const mqtt = require('mqtt');
 const cfg  = require('../config/mqtt');
 const { insertTelemetry, logCommand, insertSelfTestResult } = require('../db');
+const alertEngine = require('./alertEngine');
 
 let client;
 let lastPayload = {};   // { deviceId: payload } — cache memori untuk akses cepat
@@ -40,6 +41,8 @@ function start(wss) {
                     console.error('[DB] Gagal simpan hasil self-test:', dbErr.message);
                 }
 
+                alertEngine.checkSelfTest(deviceId, data);
+
                 // ── Forward ke semua dashboard via WebSocket ───────────────
                 const frame = JSON.stringify({ type: 'selftest_result', deviceId, data });
                 let sent = 0;
@@ -56,6 +59,8 @@ function start(wss) {
             } catch (dbErr) {
                 console.error('[DB] Gagal simpan telemetri:', dbErr.message);
             }
+
+            alertEngine.checkTelemetry(deviceId, data);
 
             // ── Forward ke semua dashboard via WebSocket ───────────────────
             const frame = JSON.stringify({ type: 'telemetry', deviceId, data });
