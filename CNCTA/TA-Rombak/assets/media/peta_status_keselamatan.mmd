@@ -1,0 +1,9 @@
+stateDiagram-v2
+    [*] --> Normal
+    Normal --> Alarm : nilai sensor melampaui<br/>ambang alarm
+    Alarm --> Cutoff : RelayControl.cut()<br/>+ sinyal E-Stop
+    Cutoff --> SafeModePermanen : heartbeat MQTT terputus<br/>> 60 detik
+    Cutoff --> MenungguPerintahResume : operator kirim<br/>perintah relay_off
+    MenungguPerintahResume --> Cutoff : nilai masih di atas<br/>ambang resume (ditolak)
+    MenungguPerintahResume --> Normal : seluruh nilai di bawah<br/>ambang resume (diizinkan)
+    SafeModePermanen --> [*] : hanya pulih via power-cycle<br/>atau reset fisik ESP32

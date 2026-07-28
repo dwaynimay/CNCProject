@@ -1,0 +1,50 @@
+# Pandoc defaults file untuk build Tugas Akhir
+# Pakai: pandoc --defaults CNCTA/pandoc-defaults.yaml -o CNCTA/output/TA-final.docx CNCTA/TA-Rombak/0*.md
+#
+# Sesuaikan daftar file bab di 'input-files' sesuai urutan bab yang sudah final.
+# CATATAN: pandoc-crossref (v0.3.24) di-compile untuk pandoc 3.9.0.2, sedangkan
+# pandoc terpasang saat ini 3.10 - muncul warning versi tapi build tetap berhasil.
+# Kalau ada perilaku aneh di crossref, pertimbangkan update binary pandoc-crossref.
+
+reference-doc: CNCTA/reference1.docx
+csl: CNCTA/ieee.csl
+bibliography: CNCTA/referensi.bib
+resource-path:
+  - CNCTA/TA-Rombak
+
+# Urutan filter penting: pandoc-crossref dulu (label Gambar/Tabel/persamaan),
+# baru citeproc (resolve [@citekey] jadi [1] + Daftar Pustaka). citeproc HARUS
+# eksplisit di sini - hanya mengisi 'bibliography'/'csl' tanpa filter citeproc
+# TIDAK memicu resolusi sitasi (ditemukan saat test build 2026-07-24: sitasi
+# tetap tampil sebagai teks mentah [@key] tanpa baris ini).
+filters:
+  - pandoc-crossref
+  - citeproc
+
+metadata:
+  link-citations: true
+  reference-section-title: "Daftar Pustaka"
+  # Localize pandoc-crossref labels to Indonesian + nomor per-bab (Tabel 1.1,
+  # Gambar 3.2, dst.) - default crossref-nya bahasa Inggris & nomor flat (Table 1).
+  figureTitle: "Gambar"
+  tableTitle: "Tabel"
+  figPrefix: ["Gambar", "Gambar"]
+  tblPrefix: ["Tabel", "Tabel"]
+  eqnPrefix: ["", ""]
+  eqPrefix: ["", ""]
+  chapters: true
+  chaptersDepth: 1
+  # linkReferences/nameInLink: tanpa ini, [@fig:x]/[@tbl:x]/[@eq:x] jadi teks
+  # polos di docx (persis seperti sitasi tanpa link-citations). Dengan ini,
+  # cross-reference jadi hyperlink internal ke gambar/tabel/persamaan yang
+  # dirujuk - perilakunya sama seperti sitasi Daftar Pustaka yang sudah link.
+  # CATATAN: docx tidak punya SEQ/REF field asli dari pandoc-crossref (itu
+  # keterbatasan pandoc, bukan sesuatu yang bisa diatur dari markdown) - jadi
+  # nomornya tetap "dibekukan" saat build, tapi sekarang tampil sebagai link
+  # yang bisa diklik, bukan teks mati.
+  linkReferences: true
+  nameInLink: true
+
+number-sections: false
+toc: true
+toc-depth: 3

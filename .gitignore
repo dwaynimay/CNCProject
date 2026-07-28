@@ -41,6 +41,7 @@ credentials.h
 
 # Graphify
 graphify-out/
+.graphifyignore
 
 # OS generated files
 .DS_Store
@@ -50,10 +51,12 @@ graphify-out/
 .Trashes
 ehthumbs.db
 Thumbs.db
+~$*
 
 # AI Assistants & Skills
 .agents/
 .claude/
+.claudeignore
 .gemini/
 .roo/
 .junie/
@@ -62,6 +65,7 @@ Thumbs.db
 .claude-plugin/
 CLAUDE.md
 GEMINI.md
+AGENTS.md
 skills-lock.json
 
 # Local Tests & Configs
@@ -73,7 +77,22 @@ test.json
 *.db-shm
 *.db-wal
 
+# User specified ignore rules
+pengujian/hasil pengujian/
+/docs
+/data
+server/backend/data/
+server/**/data/
+.obsidian/
+**/.obsidian/
+*.emf
+image2.emf
 
-# Analysis artifacts
-firmware_analysis.md
-cnc-iot-implementation-plan.md
+# CNCTA vault (Obsidian)
+!CNCTA/CLAUDE.md
+CNCTA/.obsidian/
+HANDOFF.md
+AUDIT-TEMUAN.md
+Welcome.md
+BUKUTA_FIX.docx
+CNCTA/output/
